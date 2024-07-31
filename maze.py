@@ -265,6 +265,7 @@ class Grid:
                 cell1, cell2 = tunnel.relation
                 if not cell1.locked and cell1.merge is None and not cell2.locked and cell2.merge is None:
                     V2Cell(tunnel)
+        ##random first search##
         all_cells = get_all_cells()
         visited = []
         queue = [(None, random.choice(all_cells))]
@@ -283,6 +284,7 @@ class Grid:
                 visited.append(cell)
                 neighbors = [(tunnel, next_cell) for tunnel, next_cell in cell.get_neighbors() if tunnel != prev_tunnel]
                 queue += neighbors
+        ##random first search ends##
         for cell in all_cells:
             cell.randomize()
     def set_exit(self, player):
