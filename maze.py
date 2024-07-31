@@ -40,23 +40,35 @@ class Cell(Object):
         self.innerline = innerline
         self.pos = pos
         self.locked = False
+        self.has_player = False
         self.type = 'n'
     def unlock(self):
         self.locked = False
     def lock(self):
         self.locked = True
+    def player_enter(self):
+        self.has_player = True
+        self.lock()
+    def player_leave(self):
+        self.has_player = False
+        self.unlock()
     def render(self, surface: pygame.Surface):
         match self.type:
             case 'n':
-                pygame.draw.polygon(self.surface, "white", self.outerline)
+                color = "white"
             case 's1':
-                pygame.draw.polygon(self.surface, "cyan", self.outerline)
+                color = "cyan"
             case 's2':
-                pygame.draw.polygon(self.surface, "yellow", self.outerline)
+                color = "yellow"
             case 's-1':
-                pygame.draw.polygon(self.surface, "purple", self.outerline)
+                color = "purple"
             case 'e':
-                pygame.draw.polygon(self.surface, "lime", self.outerline)
+                color = "lime"
+        if self.has_player:
+            pygame.draw.polygon(self.surface, "red", self.outerline)
+            pygame.draw.polygon(self.surface, color, self.innerline)
+        else:
+            pygame.draw.polygon(self.surface, color, self.outerline)
         surface.blit(self.surface, self.pos)
     def set_type(self, type: str):
         self.type = type
@@ -123,13 +135,16 @@ class SmallCell(Cell):
         if 25 <= inside_pos[0] <= 75 and 25 <= inside_pos[1] <= 75:
             return True
         return False
+    def is_mergable(self) -> bool:
+        return not self.locked and self.merge is None
 
 class LargeCell(Cell):
-    def __init__(self, tunnels, pos, bounding_size, outerline, innerline) -> None:
+    def __init__(self, shape, cells, tunnels, pos, bounding_size, outerline, innerline) -> None:
         super().__init__(pos, bounding_size, outerline, innerline)
         all_large_cells.add(self)
+        self.shape = shape
+        self.cells = cells
         self.tunnels = tunnels
-        self.cells = list(set([cell for cell in sum([tunnel.relation for tunnel in tunnels], ())]))
         for cell in self.cells:
             cell.merge = self
         for tunnel in self.tunnels:
@@ -145,27 +160,98 @@ class LargeCell(Cell):
             cell.merge = None
             all_large_cells.remove(self)
 
-class H2Cell(LargeCell):
+class BlockTwoCell(LargeCell):
     def __init__(self, tunnel) -> None:
-        outerline = [(25, 25), (175, 25), (175, 75), (25, 75)]
-        innerline = [(30, 30), (170, 30), (170, 70), (30, 70)]
+        match tunnel.direction:
+            case 'h':
+                shape = 'h2'
+                outerline = [(25, 25), (175, 25), (175, 75), (25, 75)]
+                innerline = [(30, 30), (170, 30), (170, 70), (30, 70)]
+                size = [200, 100]
+            case 'v':
+                shape = 'v2'
+                outerline = [(25, 25), (75, 25), (75, 175), (25, 175)]
+                innerline = [(30, 30), (70, 30), (70, 170), (30, 170)]
+                size = [100, 200]
         pos = tunnel.relation[0].pos
-        super().__init__([tunnel], pos, [200, 100], outerline, innerline)
+        super().__init__(shape, [tunnel.relation[0], tunnel.relation[1]], [tunnel], pos, size, outerline, innerline)
     def is_inside(self, pos) -> bool:
         inside_pos = (pos[0] - self.pos[0], pos[1] - self.pos[1])
-        if 25 <= inside_pos[0] <= 175 and 25 <= inside_pos[1] <= 75:
-            return True
+        match self.shape:
+            case 'h2':
+                if 25 <= inside_pos[0] <= 175 and 25 <= inside_pos[1] <= 75:
+                    return True
+            case 'v2':
+                if 25 <= inside_pos[0] <= 75 and 25 <= inside_pos[1] <= 175:
+                    return True
         return False
 
-class V2Cell(LargeCell):
-    def __init__(self, tunnel) -> None:
-        outerline = [(25, 25), (75, 25), (75, 175), (25, 175)]
-        innerline = [(30, 30), (70, 30), (70, 170), (30, 170)]
-        pos = tunnel.relation[0].pos
-        super().__init__([tunnel], pos, [100, 200], outerline, innerline)
+class LCell(LargeCell):
+    def __init__(self, shape, htunnel, vtunnel):
+        size = [200, 200]
+        tunnels = [htunnel, vtunnel]
+        match shape:
+            case 'ulL':
+                assert(htunnel.relation[0] is vtunnel.relation[0])
+                pos = htunnel.relation[0].pos
+                outerline = [(25, 25), (175, 25), (175, 75), (75, 75), (75, 175), (25, 175)]
+                innerline = [(30, 30), (170, 30), (170, 70), (70, 70), (70, 170), (30, 170)]
+                cells = [htunnel.relation[0], htunnel.relation[1], vtunnel.relation[1]]
+            case 'dlL':
+                assert(htunnel.relation[0] is vtunnel.relation[1])
+                pos = vtunnel.relation[0].pos
+                outerline = [(25, 25), (75, 25), (75, 125), (175, 125), (175, 175), (25, 175)]
+                innerline = [(30, 30), (70, 30), (70, 130), (170, 130), (170, 170), (30, 170)]
+                cells = [vtunnel.relation[0], htunnel.relation[0], htunnel.relation[1]]
+            case 'urL':
+                assert(htunnel.relation[1] is vtunnel.relation[0])
+                pos = htunnel.relation[0].pos
+                outerline = [(25, 25), (175, 25), (175, 175), (125, 175), (125, 75), (25, 75)]
+                innerline = [(30, 30), (170, 30), (170, 170), (130, 170), (130, 70), (30, 70)]
+                cells = [htunnel.relation[0], htunnel.relation[1], vtunnel.relation[1]]
+            case 'drL':
+                assert(htunnel.relation[1] is vtunnel.relation[1])
+                pos = (htunnel.relation[0].pos[0], vtunnel.relation[0].pos[1])
+                outerline = [(125, 25), (175, 25), (175, 175), (25, 175), (25, 125), (125, 125)]
+                innerline = [(130, 30), (170, 30), (170, 170), (30, 170), (30, 130), (130, 130)]
+                cells = [vtunnel.relation[0], htunnel.relation[0], htunnel.relation[1]]
+            case _:
+                assert(0)
+        super().__init__(shape, cells, tunnels, pos, size, outerline, innerline)
     def is_inside(self, pos) -> bool:
         inside_pos = (pos[0] - self.pos[0], pos[1] - self.pos[1])
-        if 25 <= inside_pos[0] <= 75 and 25 <= inside_pos[1] <= 175:
+        match self.shape[0]:
+            case 'u':
+                if 25 <= inside_pos[0] <= 175 and 25 <= inside_pos[1] <= 75:
+                    return True
+            case 'd':
+                if 25 <= inside_pos[0] <= 175 and 125 <= inside_pos[1] <= 175:
+                    return True
+        match self.shape[1]:
+            case 'l':
+                if 25 <= inside_pos[0] <= 75 and 25 <= inside_pos[1] <= 175:
+                    return True
+            case 'r':
+                if 125 <= inside_pos[0] <= 175 and 25 <= inside_pos[1] <= 175:
+                    return True
+        return False
+
+class BlockFourCell(LargeCell):
+    def __init__(self, utunnel, dtunnel, ltunnel, rtunnel):
+        assert(utunnel.relation[1] is rtunnel.relation[0])
+        assert(rtunnel.relation[1] is dtunnel.relation[1])
+        assert(dtunnel.relation[0] is ltunnel.relation[1])
+        assert(ltunnel.relation[0] is utunnel.relation[0])
+        pos = utunnel.relation[0].pos
+        size = [200, 200]
+        outerline = [(25, 25), (175, 25), (175, 175), (25, 175)]
+        innerline = [(30, 30), (170, 30), (170, 170), (30, 170)]
+        cells = [utunnel.relation[0], utunnel.relation[1], dtunnel.relation[0], dtunnel.relation[1]]
+        tunnels = [utunnel, dtunnel, ltunnel, rtunnel]
+        super().__init__('4', cells, tunnels, pos, size, outerline, innerline)
+    def is_inside(self, pos) -> bool:
+        inside_pos = (pos[0] - self.pos[0], pos[1] - self.pos[1])
+        if 25 <= inside_pos[0] <= 175 and 25 <= inside_pos[1] <= 175:
             return True
         return False
 
@@ -251,21 +337,51 @@ class Grid:
             for j, tunnel in enumerate(tunnels_row):
                 tunnel.link(self.cells[i][j], self.cells[i + 1][j])
     def randomize(self):
+        ## remerge cells ##
         for large_cell in all_large_cells.copy():
             if not large_cell.locked:
                 large_cell.unmerge()
         for _ in range(random.randint(0, 4)):
-            if random.randint(0, 1):
-                tunnel = random.choice(sum(self.tunnels['h'], []))
-                cell1, cell2 = tunnel.relation
-                if not cell1.locked and cell1.merge is None and not cell2.locked and cell2.merge is None:
-                    H2Cell(tunnel)
-            else:
-                tunnel = random.choice(sum(self.tunnels['v'], []))
-                cell1, cell2 = tunnel.relation
-                if not cell1.locked and cell1.merge is None and not cell2.locked and cell2.merge is None:
-                    V2Cell(tunnel)
-        ##random first search##
+            match random.choice(['2', 'L', '4']):
+                case '2':
+                    if random.randint(0, 1):
+                        tunnel = random.choice(sum(self.tunnels['h'], []))
+                    else:
+                        tunnel = random.choice(sum(self.tunnels['v'], []))
+                    cell1, cell2 = tunnel.relation
+                    if cell1.is_mergable() and cell2.is_mergable():
+                        BlockTwoCell(tunnel)
+                case 'L':
+                    row, col = random.randint(0, self.h-2), random.randint(0, self.w-2)
+                    ul_mergable = self.cells[row][col].is_mergable()
+                    ur_mergable = self.cells[row][col+1].is_mergable()
+                    dl_mergable = self.cells[row+1][col].is_mergable()
+                    dr_mergable = self.cells[row+1][col+1].is_mergable()
+                    u_mergable = ul_mergable and ur_mergable
+                    d_mergable = dl_mergable and dr_mergable
+                    l_mergable = ul_mergable and dl_mergable
+                    r_mergable = ur_mergable and dr_mergable
+                    htunnels =  [('u', self.tunnels['h'][row][col])] if u_mergable else [] + \
+                                [('d', self.tunnels['h'][row+1][col])] if d_mergable else []
+                    vtunnels =  [('l', self.tunnels['v'][row][col])] if l_mergable else [] + \
+                                [('r', self.tunnels['v'][row][col+1])] if r_mergable else []
+                    if len(htunnels) == 0 or len(vtunnels) == 0:
+                        break
+                    if len(htunnels) == 1:
+                        LCell(htunnels[0][0] + vtunnels[0][0] + 'L', htunnels[0][1], vtunnels[0][1])
+                        break
+                    i, j = random.randint(0, 1), random.randint(0, 1)
+                    LCell(htunnels[i][0] + vtunnels[j][0] + 'L', htunnels[i][1], vtunnels[j][1])
+                case '4':
+                    row, col = random.randint(0, self.h-2), random.randint(0, self.w-2)
+                    if  self.cells[row][col].is_mergable() and \
+                        self.cells[row+1][col].is_mergable() and \
+                        self.cells[row][col+1].is_mergable() and \
+                        self.cells[row+1][col+1].is_mergable():
+                        BlockFourCell(self.tunnels['h'][row][col], self.tunnels['h'][row+1][col], \
+                                      self.tunnels['v'][row][col], self.tunnels['v'][row][col+1])
+        ## remerge ends ##
+        ## random first search ##
         all_cells = get_all_cells()
         visited = []
         queue = [(None, random.choice(all_cells))]
@@ -284,9 +400,11 @@ class Grid:
                 visited.append(cell)
                 neighbors = [(tunnel, next_cell) for tunnel, next_cell in cell.get_neighbors() if tunnel != prev_tunnel]
                 queue += neighbors
-        ##random first search ends##
+        ## random first search ends ##
+        ## randomize type for each cell ##
         for cell in all_cells:
             cell.randomize()
+        ## randomize type for each cell ends ##
     def set_exit(self, player):
         all_cells = get_all_cells()
         for cell in all_cells:
@@ -308,20 +426,11 @@ class Player(Object):
         super().__init__()
         self.current_cell = grid.cells[(grid.w - 1) // 2][(grid.h - 1) // 2]
         self.current_cell.lock()
-        self.surface = pygame.Surface(self.current_cell.surface.get_size())
-        self.surface.set_colorkey("black")
-        self.surface.fill("black")
-        self.outerline = self.current_cell.outerline
-        self.innerline = self.current_cell.innerline
-        self.pos = self.current_cell.pos
+        self.current_cell.player_enter()
         self.rand_prob = 0
         self.safe_moves = SAFE_MOVES_TOTAL
         self.moves = 0
         self.score = 0
-    def render(self, surface):
-        pygame.draw.polygon(self.surface, "red", self.outerline)
-        pygame.draw.polygon(self.surface, "black", self.innerline)
-        surface.blit(self.surface, self.pos)
     def move(self, mouse_pos):
         next_cell = None
         all_cells = get_all_cells()
@@ -338,12 +447,6 @@ class Player(Object):
             return
         prev_cell = self.current_cell
         self.current_cell = next_cell
-        self.surface = pygame.Surface(self.current_cell.surface.get_size())
-        self.surface.set_colorkey("black")
-        self.surface.fill("black")
-        self.outerline = self.current_cell.outerline
-        self.innerline = self.current_cell.innerline
-        self.pos = self.current_cell.pos
         match self.current_cell.type:
             case 's1':
                 self.score += 1
@@ -356,8 +459,8 @@ class Player(Object):
                 exited = True
                 return
         self.current_cell.set_type('n')
-        prev_cell.unlock()
-        self.current_cell.lock()
+        prev_cell.player_leave()
+        self.current_cell.player_enter()
         if exitable:
             self.safe_moves -= 1
             self.moves += 1
@@ -402,7 +505,6 @@ while True:
         cell.render(screen)
     for tunnel in all_tunnels:
         tunnel.render(screen)
-    player.render(screen)
     score_text_surface = font.render(f'Score:{player.score}', True, "white")
     moves_text_surface = font.render(f'Moves:{player.moves}', True, "white")
     screen.blit(score_text_surface, (0, grid.h*100-10))
@@ -420,6 +522,18 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             raise SystemExit
+    screen.fill("black")
+    pygame.draw.rect(screen, "white", pygame.Rect(525, 25, 750, 550))
+    for cell in all_small_cells:
+        cell.render(screen)
+    for cell in all_large_cells:
+        cell.render(screen)
+    for tunnel in all_tunnels:
+        tunnel.render(screen)
+    score_text_surface = font.render(f'Score:{player.score}', True, "white")
+    moves_text_surface = font.render(f'Moves:{player.moves}', True, "white")
+    screen.blit(score_text_surface, (0, grid.h*100-10))
+    screen.blit(moves_text_surface, (SIZE * 100-moves_text_surface.get_width(), grid.h*100-10))
     exit_text_surface = font.render('Exited', True, "lime")
     screen.blit(exit_text_surface, (275, grid.h*100-10))
     pygame.display.flip()
