@@ -1,14 +1,18 @@
 from cell import *
 from tunnel import *
 
-class Grid:
+class Grid(Object):
     def __init__(self, w, h):
+        super().__init__()
+        self.surface = pygame.Surface([50 * w, 50 * h])
+        self.surface.set_colorkey("black")
+        self.surface.fill("black")
         self.w = w
         self.h = h
-        self.cells = [[SmallCell(i, j, (j*100, i*100)) for j in range(w)] for i in range(h)]
+        self.cells = [[SmallCell(i, j, (j*50, i*50)) for j in range(w)] for i in range(h)]
         self.tunnels = {
-            'h': [[Tunnel('h', i, j, (75+j*100, 25+i*100)) for j in range(w - 1)] for i in range(h)],
-            'v': [[Tunnel('v', i, j, (25+j*100, 75+i*100)) for j in range(w)] for i in range(h - 1)]
+            'h': [[Tunnel('h', i, j, (25+j*50, i*50)) for j in range(w - 1)] for i in range(h)],
+            'v': [[Tunnel('v', i, j, (j*50, 25+i*50)) for j in range(w)] for i in range(h - 1)]
         }
         for i, tunnels_row in enumerate(self.tunnels['h']):
             for j, tunnel in enumerate(tunnels_row):
@@ -69,7 +73,7 @@ class Grid:
             prev_tunnel, cell = random.choice(queue)
             queue = [item for item in queue if item != (prev_tunnel, cell)]
             if cell in visited :
-                prob = 15 if not exitable else 5
+                prob = 15 if not glob_var["exitable"] else 5
                 if random.randint(1, 100) <= prob:
                     prev_tunnel.set_state(True)
                 else:
@@ -85,18 +89,42 @@ class Grid:
         for cell in all_cells:
             cell.randomize()
         ## randomize type for each cell ends ##
-    def set_exit(self, player):
+    def set_exit(self):
         all_cells = get_all_cells()
         for cell in all_cells:
             cell.set_type('n')
         candidates = []
-        for i, cells_row in enumerate(self.cells):
-            for j, cell in enumerate(cells_row):
-                if abs(i - player.current_cell.row) + abs(j - player.current_cell.col) <= SIZE / 2 or cell.locked:
-                    continue
-                candidates.append(cell)
+        for cell in all_cells:
+            if abs(cell.row - glob_var["player"].current_cell.row) + abs(cell.col - glob_var["player"].current_cell.col) <= SIZE / 2 or cell.locked:
+                continue
+            candidates.append(cell)
         exit_cell = random.choice(candidates)
         exit_cell.set_type('e')
-        player.safe_moves = 2
+        exit_cell.lock()
+        glob_var["player"].safe_moves = 2
+    def render_minimap(self, surface):
+        for cell in get_all_cells():
+            match cell.type:
+                case 'n':
+                    color = "white"
+                case 's1':
+                    color = "cyan"
+                case 's2':
+                    color = "yellow"
+                case 's-1':
+                    color = "purple"
+                case 'e':
+                    color = "lime"
+            if cell.has_player:
+                pygame.draw.polygon(cell.surface, "red", cell.outerline)
+            else:
+                pygame.draw.polygon(cell.surface, "black", cell.outerline)
+            pygame.draw.polygon(cell.surface, color, cell.innerline)
+            surface.blit(cell.surface, cell.pos)
+        for tunnel in all_tunnels:
+            if not tunnel.opened or tunnel.merge is not None:
+                continue
+            pygame.draw.polygon(tunnel.surface, "white", tunnel.outerline)
+            surface.blit(tunnel.surface, tunnel.pos)
 
-grid = Grid(SIZE, SIZE)
+glob_var["grid"] = Grid(SIZE, SIZE)

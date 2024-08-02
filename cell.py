@@ -1,15 +1,23 @@
 from object import *
-from utils import *
+from maze_global import *
 import random
 
+all_small_cells = pygame.sprite.Group()
+all_large_cells = pygame.sprite.Group()
+
+def get_all_cells():
+    return [cell for cell in all_small_cells if cell.merge is None] + list(all_large_cells)
+
 class Cell(Object):
-    def __init__(self, pos, bounding_size, outerline, innerline):
+    def __init__(self, row, col, pos, bounding_size, outerline, innerline):
         super().__init__()
         self.surface = pygame.Surface(bounding_size)
         self.surface.set_colorkey("black")
         self.surface.fill("black")
         self.outerline = outerline
         self.innerline = innerline
+        self.row = row
+        self.col = col
         self.pos = pos
         self.locked = False
         self.has_player = False
@@ -25,29 +33,13 @@ class Cell(Object):
         self.has_player = False
         self.unlock()
     def render(self, surface: pygame.Surface):
-        match self.type:
-            case 'n':
-                color = "white"
-            case 's1':
-                color = "cyan"
-            case 's2':
-                color = "yellow"
-            case 's-1':
-                color = "purple"
-            case 'e':
-                color = "lime"
-        if self.has_player:
-            pygame.draw.polygon(self.surface, "red", self.outerline)
-            pygame.draw.polygon(self.surface, color, self.innerline)
-        else:
-            pygame.draw.polygon(self.surface, color, self.outerline)
-        surface.blit(self.surface, self.pos)
+        pass
     def set_type(self, type: str):
         self.type = type
     def randomize(self) -> bool:
         if self.locked:
             return False
-        if exitable:
+        if glob_var["exitable"]:
             if self.type != 'e':
                 self.set_type('n')
             return True
@@ -63,22 +55,16 @@ class Cell(Object):
         return True
 
 class SmallCell(Cell):
+    outerline = [(0, 0), (50, 0), (50, 50), (0, 50)]
+    innerline = [(5, 5), (45, 5), (45, 45), (5, 45)]
     def __init__(self, row, col, pos):
-        outerline = [(25, 25), (75, 25), (75, 75), (25, 75)]
-        innerline = [(30, 30), (70, 30), (70, 70), (30, 70)]
-        super().__init__(pos, [100, 100], outerline, innerline)
+        super().__init__(row, col, pos, [50, 50], SmallCell.outerline, SmallCell.innerline)
         all_small_cells.add(self)
-        self.row = row
-        self.col = col
         self.merge = None
         self.up = None
         self.down = None
         self.left = None
         self.right = None
-    def render(self, surface):
-        if self.merge is not None:
-            return
-        super().render(surface)
     def get_neighbor(self, direction: str):
         neighbor = (None, None)
         match direction:
@@ -103,7 +89,7 @@ class SmallCell(Cell):
         return neighbors
     def is_inside(self, pos) -> bool:
         inside_pos = (pos[0] - self.pos[0], pos[1] - self.pos[1])
-        if 25 <= inside_pos[0] <= 75 and 25 <= inside_pos[1] <= 75:
+        if 0 <= inside_pos[0] <= 50 and 0 <= inside_pos[1] <= 50:
             return True
         return False
     def is_mergable(self) -> bool:
@@ -111,7 +97,7 @@ class SmallCell(Cell):
 
 class LargeCell(Cell):
     def __init__(self, shape, cells, tunnels, pos, bounding_size, outerline, innerline) -> None:
-        super().__init__(pos, bounding_size, outerline, innerline)
+        super().__init__(cells[0].row, cells[0].col, pos, bounding_size, outerline, innerline)
         all_large_cells.add(self)
         self.shape = shape
         self.cells = cells
@@ -132,96 +118,110 @@ class LargeCell(Cell):
             all_large_cells.remove(self)
 
 class BlockTwoCell(LargeCell):
+    outerline_h2 = [(0, 0), (100, 0), (100, 50), (0, 50)]
+    innerline_h2 = [(5, 5), (95, 5), (95, 45), (5, 45)]
+    size_h2 = [100, 50]
+    size_v2 = [50, 100]
+    outerline_v2 = [(0, 0), (50, 0), (50, 100), (0, 100)]
+    innerline_v2 = [(5, 5), (45, 5), (45, 95), (5, 95)]
     def __init__(self, tunnel) -> None:
         match tunnel.direction:
             case 'h':
                 shape = 'h2'
-                outerline = [(25, 25), (175, 25), (175, 75), (25, 75)]
-                innerline = [(30, 30), (170, 30), (170, 70), (30, 70)]
-                size = [200, 100]
+                outerline = BlockTwoCell.outerline_h2
+                innerline = BlockTwoCell.innerline_h2
+                size = BlockTwoCell.size_h2
             case 'v':
                 shape = 'v2'
-                outerline = [(25, 25), (75, 25), (75, 175), (25, 175)]
-                innerline = [(30, 30), (70, 30), (70, 170), (30, 170)]
-                size = [100, 200]
+                outerline = BlockTwoCell.outerline_v2
+                innerline = BlockTwoCell.innerline_v2
+                size = BlockTwoCell.size_v2
         pos = tunnel.relation[0].pos
         super().__init__(shape, [tunnel.relation[0], tunnel.relation[1]], [tunnel], pos, size, outerline, innerline)
     def is_inside(self, pos) -> bool:
         inside_pos = (pos[0] - self.pos[0], pos[1] - self.pos[1])
         match self.shape:
             case 'h2':
-                if 25 <= inside_pos[0] <= 175 and 25 <= inside_pos[1] <= 75:
+                if 0 <= inside_pos[0] <= 100 and 0 <= inside_pos[1] <= 50:
                     return True
             case 'v2':
-                if 25 <= inside_pos[0] <= 75 and 25 <= inside_pos[1] <= 175:
+                if 0 <= inside_pos[0] <= 50 and 0 <= inside_pos[1] <= 100:
                     return True
         return False
 
 class LCell(LargeCell):
+    outerline_ulL = [(0, 0), (100, 0), (100, 50), (50, 50), (50, 100), (0, 100)]
+    innerline_ulL = [(5, 5), (95, 5), (95, 45), (45, 45), (45, 95), (5, 95)]
+    outerline_dlL = [(0, 0), (50, 0), (50, 50), (100, 50), (100, 100), (0, 100)]
+    innerline_dlL = [(5, 5), (45, 5), (45, 55), (95, 55), (95, 95), (5, 95)]
+    outerline_urL = [(0, 0), (100, 0), (100, 100), (50, 100), (50, 50), (0, 50)]
+    innerline_urL = [(5, 5), (95, 5), (95, 95), (55, 95), (55, 45), (5, 45)]
+    outerline_drL = [(50, 0), (100, 0), (100, 100), (0, 100), (0, 50), (50, 50)]
+    innerline_drL = [(55, 5), (95, 5), (95, 95), (5, 95), (5, 55), (55, 55)]
+    size = [100, 100]
     def __init__(self, shape, htunnel, vtunnel):
-        size = [200, 200]
         tunnels = [htunnel, vtunnel]
         match shape:
             case 'ulL':
                 assert(htunnel.relation[0] is vtunnel.relation[0])
                 pos = htunnel.relation[0].pos
-                outerline = [(25, 25), (175, 25), (175, 75), (75, 75), (75, 175), (25, 175)]
-                innerline = [(30, 30), (170, 30), (170, 70), (70, 70), (70, 170), (30, 170)]
+                outerline = LCell.outerline_ulL
+                innerline = LCell.innerline_ulL
                 cells = [htunnel.relation[0], htunnel.relation[1], vtunnel.relation[1]]
             case 'dlL':
                 assert(htunnel.relation[0] is vtunnel.relation[1])
                 pos = vtunnel.relation[0].pos
-                outerline = [(25, 25), (75, 25), (75, 125), (175, 125), (175, 175), (25, 175)]
-                innerline = [(30, 30), (70, 30), (70, 130), (170, 130), (170, 170), (30, 170)]
+                outerline = LCell.outerline_dlL
+                innerline = LCell.innerline_dlL
                 cells = [vtunnel.relation[0], htunnel.relation[0], htunnel.relation[1]]
             case 'urL':
                 assert(htunnel.relation[1] is vtunnel.relation[0])
                 pos = htunnel.relation[0].pos
-                outerline = [(25, 25), (175, 25), (175, 175), (125, 175), (125, 75), (25, 75)]
-                innerline = [(30, 30), (170, 30), (170, 170), (130, 170), (130, 70), (30, 70)]
+                outerline = LCell.outerline_urL
+                innerline = LCell.innerline_urL
                 cells = [htunnel.relation[0], htunnel.relation[1], vtunnel.relation[1]]
             case 'drL':
                 assert(htunnel.relation[1] is vtunnel.relation[1])
                 pos = (htunnel.relation[0].pos[0], vtunnel.relation[0].pos[1])
-                outerline = [(125, 25), (175, 25), (175, 175), (25, 175), (25, 125), (125, 125)]
-                innerline = [(130, 30), (170, 30), (170, 170), (30, 170), (30, 130), (130, 130)]
+                outerline = LCell.outerline_drL
+                innerline = LCell.innerline_drL
                 cells = [vtunnel.relation[0], htunnel.relation[0], htunnel.relation[1]]
             case _:
                 assert(0)
-        super().__init__(shape, cells, tunnels, pos, size, outerline, innerline)
+        super().__init__(shape, cells, tunnels, pos, LCell.size, outerline, innerline)
     def is_inside(self, pos) -> bool:
         inside_pos = (pos[0] - self.pos[0], pos[1] - self.pos[1])
         match self.shape[0]:
             case 'u':
-                if 25 <= inside_pos[0] <= 175 and 25 <= inside_pos[1] <= 75:
+                if 0 <= inside_pos[0] <= 100 and 0 <= inside_pos[1] <= 50:
                     return True
             case 'd':
-                if 25 <= inside_pos[0] <= 175 and 125 <= inside_pos[1] <= 175:
+                if 0 <= inside_pos[0] <= 100 and 50 <= inside_pos[1] <= 100:
                     return True
         match self.shape[1]:
             case 'l':
-                if 25 <= inside_pos[0] <= 75 and 25 <= inside_pos[1] <= 175:
+                if 0 <= inside_pos[0] <= 50 and 0 <= inside_pos[1] <= 100:
                     return True
             case 'r':
-                if 125 <= inside_pos[0] <= 175 and 25 <= inside_pos[1] <= 175:
+                if 50 <= inside_pos[0] <= 100 and 0 <= inside_pos[1] <= 100:
                     return True
         return False
 
 class BlockFourCell(LargeCell):
+    outerline = [(0, 0), (100, 0), (100, 100), (0, 100)]
+    innerline = [(5, 5), (95, 5), (95, 95), (5, 95)]
+    size = [100, 100]
     def __init__(self, utunnel, dtunnel, ltunnel, rtunnel):
         assert(utunnel.relation[1] is rtunnel.relation[0])
         assert(rtunnel.relation[1] is dtunnel.relation[1])
         assert(dtunnel.relation[0] is ltunnel.relation[1])
         assert(ltunnel.relation[0] is utunnel.relation[0])
         pos = utunnel.relation[0].pos
-        size = [200, 200]
-        outerline = [(25, 25), (175, 25), (175, 175), (25, 175)]
-        innerline = [(30, 30), (170, 30), (170, 170), (30, 170)]
         cells = [utunnel.relation[0], utunnel.relation[1], dtunnel.relation[0], dtunnel.relation[1]]
         tunnels = [utunnel, dtunnel, ltunnel, rtunnel]
-        super().__init__('4', cells, tunnels, pos, size, outerline, innerline)
+        super().__init__('4', cells, tunnels, pos, BlockFourCell.size, BlockFourCell.outerline, BlockFourCell.innerline)
     def is_inside(self, pos) -> bool:
         inside_pos = (pos[0] - self.pos[0], pos[1] - self.pos[1])
-        if 25 <= inside_pos[0] <= 175 and 25 <= inside_pos[1] <= 175:
+        if 0 <= inside_pos[0] <= 100 and 0 <= inside_pos[1] <= 100:
             return True
         return False

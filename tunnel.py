@@ -1,20 +1,21 @@
 import pygame
-from utils import *
 from object import *
 
+all_tunnels = pygame.sprite.Group()
+
 class Tunnel(Object):
+    outerline_h = [(20, 15), (30, 15), (30, 35), (20, 35)]
+    outerline_v = [(15, 20), (35, 20), (35, 30), (15, 30)]
     def __init__(self, direction: str, row, col, pos):
         super().__init__()
-        self.surface = pygame.Surface([50, 50])
+        self.surface = pygame.Surface([30, 30])
         self.surface.set_colorkey("black")
         self.surface.fill("black")
         match direction:
             case 'h':
-                self.outerline = [(0, 15), (50, 15), (50, 35), (0, 35)]
-                self.innerline = [(0, 20), (50, 20), (50, 30), (0, 30)]
+                self.outerline = Tunnel.outerline_h
             case 'v':
-                self.outerline = [(15, 0), (35, 0), (35, 50), (15, 50)]
-                self.innerline = [(20, 0), (30, 0), (30, 50), (20, 50)]
+                self.outerline = Tunnel.outerline_v
         self.pos = pos
         all_tunnels.add(self)
         self.row = row
@@ -24,11 +25,6 @@ class Tunnel(Object):
         self.merge = None
         self.opened = False
         self.locked = True
-    def render(self, screen):
-        if not self.opened or self.merge is not None:
-            return
-        pygame.draw.polygon(self.surface, "white", self.outerline)
-        screen.blit(self.surface, self.pos)
     def unlock(self):
         self.locked = False
     def lock(self):
