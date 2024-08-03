@@ -1,30 +1,55 @@
 import pygame
 from object import *
+from utils import *
+from tile import *
 
 all_tunnels = pygame.sprite.Group()
 
 class Tunnel(Object):
-    outerline_h = [(20, 15), (30, 15), (30, 35), (20, 35)]
-    outerline_v = [(15, 20), (35, 20), (35, 30), (15, 30)]
-    def __init__(self, direction: str, row, col, pos):
+    outerline_h = [(5, 0), (15, 0), (15, 20), (5, 20)]
+    innerline_h = []
+    outerline_v = [(0, 5), (20, 5), (20, 15), (0, 15)]
+    innerline_v = []
+    def __init__(self, direction: str, row, col, cell1, cell2):
         super().__init__()
-        self.surface = pygame.Surface([30, 30])
-        self.surface.set_colorkey("black")
-        self.surface.fill("black")
-        match direction:
-            case 'h':
-                self.outerline = Tunnel.outerline_h
-            case 'v':
-                self.outerline = Tunnel.outerline_v
-        self.pos = pos
-        all_tunnels.add(self)
+        self.surface = pygame.Surface([20, 20])
+        self.surface.set_colorkey("white")
+        self.surface.fill("white")
         self.row = row
         self.col = col
         self.direction = direction
-        self.relation = None
+        self.relations = (cell1, cell2)
+        match direction:
+            case 'h':
+                self.minipos = pygame.Vector2(40 + col * TILE_WIDTH, 15 + row * TILE_HEIGHT)
+                self.outerline = Tunnel.outerline_h
+                cell1.neighbor_cells['r'] = (self, cell2)
+                cell2.neighbor_cells['l'] = (self, cell1)
+                entries = [
+                    [pygame.Vector2(cell2.pos.x, cell2.pos.y + i * TILE_HEIGHT) for i in range(4, 8)],
+                    [pygame.Vector2(cell1.pos.x + CELL_WIDTH - TILE_WIDTH, cell1.pos.y + i * TILE_HEIGHT) for i in range(4, 8)]
+                ]
+                directions = [pygame.Vector2(1, 0), pygame.Vector2(-1, 0)]
+            case 'v':
+                self.minipos = pygame.Vector2(15 + col * TILE_WIDTH, 40 + row * 50)
+                self.outerline = Tunnel.outerline_v
+                cell1.neighbor_cells['d'] = (self, cell2)
+                cell2.neighbor_cells['u'] = (self, cell1)
+                entries = [
+                    [pygame.Vector2(cell2.pos.x + i * TILE_WIDTH, cell2.pos.y) for i in range(6, 10)],
+                    [pygame.Vector2(cell1.pos.x + i * TILE_WIDTH, cell1.pos.y + CELL_HEIGHT - TILE_HEIGHT) for i in range(6, 10)]
+                ]
+                directions = [pygame.Vector2(0, 1), pygame.Vector2(0, -1)]
+        all_tunnels.add(self)
         self.merge = None
-        self.opened = False
-        self.locked = True
+        self.opened = True
+        self.locked = False
+        for entry in entries[0]:
+            tunnel_tile = TunnelEntry(entry, self, directions[0])
+            cell1.tiles.add(tunnel_tile)
+        for entry in entries[1]:
+            tunnel_tile = TunnelEntry(entry, self, directions[1])
+            cell2.tiles.add(tunnel_tile)
     def unlock(self):
         self.locked = False
     def lock(self):
@@ -33,33 +58,4 @@ class Tunnel(Object):
         if self.locked:
             return False
         self.opened = opened
-        return True
-    def link(self, cell1, cell2) -> bool:
-        if self.relation is not None:
-            return False
-        self.locked = False
-        self.relation = (cell1, cell2)
-        self.opened = True
-        match self.direction:
-            case 'h':
-                cell1.right = self
-                cell2.left = self
-            case 'v':
-                cell1.down = self
-                cell2.up = self
-        return True
-    def unlink(self) -> bool:
-        if self.relation is None:
-            return False
-        cell1, cell2 = self.relation
-        self.relation = None
-        self.opened = False
-        self.locked = True
-        match self.direction:
-            case 'h':
-                cell1.right = None
-                cell2.left = None
-            case 'v':
-                cell1.down = None
-                cell2.up = None
         return True

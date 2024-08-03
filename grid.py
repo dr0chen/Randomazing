@@ -9,20 +9,15 @@ class Grid(Object):
         self.surface.fill("black")
         self.w = w
         self.h = h
-        self.cells = [[SmallCell(i, j, (j*50, i*50)) for j in range(w)] for i in range(h)]
+        self.should_randomize = False
+        self.cells = [[SmallCell(i, j) for j in range(w)] for i in range(h)]
         self.tunnels = {
-            'h': [[Tunnel('h', i, j, (25+j*50, i*50)) for j in range(w - 1)] for i in range(h)],
-            'v': [[Tunnel('v', i, j, (j*50, 25+i*50)) for j in range(w)] for i in range(h - 1)]
+            'h': [[Tunnel('h', i, j, self.cells[i][j], self.cells[i][j+1]) for j in range(w - 1)] for i in range(h)],
+            'v': [[Tunnel('v', i, j, self.cells[i][j], self.cells[i+1][j]) for j in range(w)] for i in range(h - 1)]
         }
-        for i, tunnels_row in enumerate(self.tunnels['h']):
-            for j, tunnel in enumerate(tunnels_row):
-                tunnel.link(self.cells[i][j], self.cells[i][j + 1])
-        for i, tunnels_row in enumerate(self.tunnels['v']):
-            for j, tunnel in enumerate(tunnels_row):
-                tunnel.link(self.cells[i][j], self.cells[i + 1][j])
     def randomize(self):
         ## remerge cells ##
-        for large_cell in all_large_cells.copy():
+        for large_cell in LargeCell.all_large_cells.copy():
             if not large_cell.locked:
                 large_cell.unmerge()
         for _ in range(random.randint(0, 4)):
@@ -32,7 +27,7 @@ class Grid(Object):
                         tunnel = random.choice(sum(self.tunnels['h'], []))
                     else:
                         tunnel = random.choice(sum(self.tunnels['v'], []))
-                    cell1, cell2 = tunnel.relation
+                    cell1, cell2 = tunnel.relations
                     if cell1.is_mergable() and cell2.is_mergable():
                         BlockTwoCell(tunnel)
                 case 'L':
@@ -89,13 +84,14 @@ class Grid(Object):
         for cell in all_cells:
             cell.randomize()
         ## randomize type for each cell ends ##
+        self.should_randomize = False
     def set_exit(self):
         all_cells = get_all_cells()
         for cell in all_cells:
             cell.set_type('n')
         candidates = []
         for cell in all_cells:
-            if abs(cell.row - glob_var["player"].current_cell.row) + abs(cell.col - glob_var["player"].current_cell.col) <= SIZE / 2 or cell.locked:
+            if abs(cell.row - glob_var["player"].current_cell.row) + abs(cell.col - glob_var["player"].current_cell.col) <= MAZE_SIZE / 2 or cell.locked:
                 continue
             candidates.append(cell)
         exit_cell = random.choice(candidates)
@@ -106,7 +102,7 @@ class Grid(Object):
         for cell in get_all_cells():
             match cell.type:
                 case 'n':
-                    color = "white"
+                    color = "black"
                 case 's1':
                     color = "cyan"
                 case 's2':
@@ -116,15 +112,17 @@ class Grid(Object):
                 case 'e':
                     color = "lime"
             if cell.has_player:
-                pygame.draw.polygon(cell.surface, "red", cell.outerline)
+                pygame.draw.polygon(cell.minisurface, "red", cell.outerline)
             else:
-                pygame.draw.polygon(cell.surface, "black", cell.outerline)
-            pygame.draw.polygon(cell.surface, color, cell.innerline)
-            surface.blit(cell.surface, cell.pos)
+                pygame.draw.polygon(cell.minisurface, "white", cell.outerline)
+            pygame.draw.polygon(cell.minisurface, color, cell.innerline)
+            surface.blit(cell.minisurface, cell.minipos)
         for tunnel in all_tunnels:
             if not tunnel.opened or tunnel.merge is not None:
                 continue
-            pygame.draw.polygon(tunnel.surface, "white", tunnel.outerline)
-            surface.blit(tunnel.surface, tunnel.pos)
+            tunnel.surface.fill("white")
+            pygame.draw.polygon(tunnel.surface, "black", tunnel.outerline)
+            surface.blit(tunnel.surface, tunnel.minipos)
 
-glob_var["grid"] = Grid(SIZE, SIZE)
+glob_var["grid"] = Grid(MAZE_SIZE, MAZE_SIZE)
+current_cells.append(glob_var["grid"].cells[MAZE_SIZE // 2][MAZE_SIZE // 2])
