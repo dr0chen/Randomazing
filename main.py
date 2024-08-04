@@ -40,9 +40,9 @@ while True:
         glob_var["exitable"] = True
     screen.fill("black")
     glob_var["grid"].render_minimap(screen)
-    player_move(glob_var["player"], glob_var["player"].location.cm)
+    glob_var["player"].update()
     glob_var["camera"].follow(glob_var["player"].rect.center)
-    scene.fill("brown")
+    scene.fill("black")
     for cell in current_cells:
         cell.render_layout(scene)
     scene.blit(glob_var["player"].surface, glob_var["player"].rect)

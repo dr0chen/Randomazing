@@ -71,7 +71,9 @@ class CollisionManager:
                 if strategy:
                     strategy.handle_collision(obj1, obj2)
 
-def player_move(player, cm):
+def update():
+    player = glob_var["player"]
+    cm = player.location.cm
     player.acc = pygame.Vector2(0, 0)
     max_speed = player.speed
     if player.state == 'free':
