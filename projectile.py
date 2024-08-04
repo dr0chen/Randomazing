@@ -4,7 +4,7 @@ from unit import *
 
 class Projectile(pygame.sprite.Sprite):
     all_projectiles = pygame.sprite.Group()
-    def __init__(self, owner: Unit, damage, pos: pygame.Vector2, vel: pygame.Vector2):
+    def __init__(self, owner: Unit, damage, pos: pygame.Vector2, vel: pygame.Vector2, cm):
         super().__init__()
         self.surface = pygame.Surface([10, 10])
         self.surface.fill("yellow")
@@ -13,6 +13,7 @@ class Projectile(pygame.sprite.Sprite):
         self.vel = vel
         self.owner = owner
         Projectile.all_projectiles.add(self)
+        cm.add_dynamic(self)
     def update(self):
         self.rect.topleft += self.vel
         if surpassborder(self.rect, glob_var["scene"].get_rect()):

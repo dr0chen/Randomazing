@@ -22,6 +22,8 @@ class Cell(Object):
         self.cm = CollisionManager()
         self.cm.register_strategy(Player, Wall, PlayerWallCollision())
         self.cm.register_strategy(Player, TunnelEntry, PlayerTunnelEntryCollision())
+        self.cm.register_strategy(Projectile, Wall, ProjectileWallCollision())
+        self.cm.register_strategy(Projectile, TunnelEntry, ProjectileTunnelEntryCollision())
     def is_including(self, rect: pygame.Rect) -> bool:
         for point in [rect.topleft, rect.topright, rect.bottomleft, rect.bottomright]:
             for area in self.areas:

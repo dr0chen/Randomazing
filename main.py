@@ -52,7 +52,7 @@ while True:
     for projectile in Projectile.all_projectiles:
         projectile.update()
         projectile.render(glob_var["scene"])
-    glob_var["scene"].blit(glob_var["player"].surface, glob_var["player"].rect)
+    glob_var["player"].render(glob_var["scene"])
     screen.blit(glob_var["scene"], (MAZE_SIZE * TILE_WIDTH, 0), glob_var["camera"].rect)
     score_text_surface = font.render(f'Score:{glob_var["player"].score}', True, "white")
     moves_text_surface = font.render(f'Moves:{glob_var["player"].moves}', True, "white")

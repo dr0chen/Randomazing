@@ -44,8 +44,10 @@ class Tunnel(Object):
         self.opened = True
         self.locked = False
         self.cm = CollisionManager()
-        self.cm.register_strategy(Player, Wall, PlayerWallCollision)
-        self.cm.register_strategy(Player, TunnelEntry, PlayerTunnelEntryCollision)
+        self.cm.register_strategy(Player, Wall, PlayerWallCollision())
+        self.cm.register_strategy(Player, TunnelEntry, PlayerTunnelEntryCollision())
+        self.cm.register_strategy(Projectile, Wall, ProjectileWallCollision())
+        self.cm.register_strategy(Projectile, TunnelEntry, ProjectileTunnelEntryCollision())
     def unlock(self):
         self.locked = False
     def lock(self):

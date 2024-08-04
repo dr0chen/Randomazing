@@ -12,12 +12,12 @@ class Player(Unit):
         self.rect = pygame.Rect((0, 0), [TILE_WIDTH, TILE_HEIGHT])
         self.rect.center = current_cells[0].bound.center
         self.speed = speed
-        self.health = 20
+        self.health = 100
         self.attack = 10
-        self.defence = 10
         self.vel = pygame.Vector2(0, 0)
         self.acc = pygame.Vector2(0, 0)
         self.facing = [1, 0]
+        self.shield = False
         self.state = 'free'
         self.rand_prob = 0
         self.safe_moves = SAFE_MOVES_TOTAL
@@ -27,7 +27,7 @@ class Player(Unit):
         self.location = current_cells[0]
         self.location.player_enter(self)
     def shoot_bullet(self, mouse_pos):
-        if self.state != 'free':
+        if self.state != 'free' or self.shield:
             return
         src_pos = pygame.Vector2(self.rect.center)
         dest_pos = pygame.Vector2(glob_var["camera"].rect.topleft) + pygame.Vector2(mouse_pos) - pygame.Vector2(MAZE_SIZE * TILE_WIDTH, 0)
@@ -46,7 +46,7 @@ class Player(Unit):
                 case _:
                     assert(0)
         vel = vel.normalize() * 15
-        Projectile(self, self.attack, self.rect.center, vel)
+        Projectile(self, self.attack, self.rect.center, vel, self.location.cm)
     def move_to(self, next_cell):
         self.state = 'transition'
         self.current_cell.player_leave(self)
@@ -76,6 +76,12 @@ class Player(Unit):
                     self.rand_prob = 0
                     self.safe_moves = SAFE_MOVES_TOTAL
                     glob_var["grid"].should_randomize = True
+    def render(self, surface):
+        if self.shield:
+            self.surface.fill("orange")
+        else:
+            self.surface.fill("red")
+        surface.blit(self.surface, self.rect)
     def update(self):
         self.acc = pygame.Vector2(0, 0)
         max_speed = self.speed
@@ -101,6 +107,9 @@ class Player(Unit):
                 self.facing = facing_tmp
             if pressed_keys[pygame.K_LSHIFT] or pressed_keys[pygame.K_RSHIFT]:
                 max_speed = 5
+                self.shield = True
+            else:
+                self.shield = False
         elif self.state == 'transition':
             self.acc.x += self.facing[0] * self.speed / 2
             self.acc.y += self.facing[1] * self.speed / 2
