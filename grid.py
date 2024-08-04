@@ -123,6 +123,3 @@ class Grid(Object):
             tunnel.surface.fill("white")
             pygame.draw.polygon(tunnel.surface, "black", tunnel.outerline)
             surface.blit(tunnel.surface, tunnel.minipos)
-
-glob_var["grid"] = Grid(MAZE_SIZE, MAZE_SIZE)
-current_cells.append(glob_var["grid"].cells[MAZE_SIZE // 2][MAZE_SIZE // 2])

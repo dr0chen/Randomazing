@@ -17,13 +17,18 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 clock = pygame.time.Clock()
 
+
+glob_var["grid"] = Grid(MAZE_SIZE, MAZE_SIZE)
+current_cells.append(glob_var["grid"].cells[MAZE_SIZE // 2][MAZE_SIZE // 2])
+glob_var["player"] = Player(10)
+
 for cell in get_all_cells():
     cell.make_layout()
 
-glob_var["grid"].randomize()
-
 scene = pygame.Surface([MAZE_SIZE * CELL_WIDTH, MAZE_SIZE * CELL_HEIGHT])
 glob_var["camera"] = Camera(scene, current_cells[0].pos)
+
+glob_var["grid"].randomize()
 
 while True:
     for event in pygame.event.get():
@@ -35,7 +40,7 @@ while True:
         glob_var["exitable"] = True
     screen.fill("black")
     glob_var["grid"].render_minimap(screen)
-    glob_var["player"].move()
+    player_move(glob_var["player"], glob_var["player"].location.cm)
     glob_var["camera"].follow(glob_var["player"].rect.center)
     scene.fill("brown")
     for cell in current_cells:

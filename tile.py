@@ -4,13 +4,14 @@ from camera import *
 
 class Tile(pygame.sprite.Sprite):
     all_tiles = pygame.sprite.Group()
-    def __init__(self, pos: pygame.Vector2):
+    def __init__(self, pos: pygame.Vector2, cm):
         super().__init__()
         self.surface = pygame.Surface([50, 50])
         self.surface.set_colorkey("black")
         self.surface.fill("black")
         self.rect = pygame.Rect(pos, [50, 50])
-        Tile.add(self)
+        Tile.all_tiles.add(self)
+        cm.add_static(self)
     def render(self, surface):
         surface.blit(self.surface, self.rect)
     def handle_collision(self, player) -> bool:
@@ -18,10 +19,10 @@ class Tile(pygame.sprite.Sprite):
 
 class Wall(Tile):
     all_walls = pygame.sprite.Group()
-    def __init__(self, pos: pygame.Vector2):
-        super().__init__(pos)
+    def __init__(self, pos: pygame.Vector2, cm):
+        super().__init__(pos, cm)
         self.surface.fill("white")
-        self.add(Wall.all_walls)
+        Wall.all_walls.add(self)
     def handle_collision(self, player) -> bool:
         if colliderect(player.rect, self.rect):
             if player.vel.x > 0:
@@ -38,8 +39,8 @@ class Wall(Tile):
         return False
 
 class TunnelEntry(Tile):
-    def __init__(self, pos: pygame.Vector2, tunnel, direction: pygame.Vector2):
-        super().__init__(pos)
+    def __init__(self, pos: pygame.Vector2, tunnel, direction: pygame.Vector2, cm):
+        super().__init__(pos, cm)
         self.tunnel = tunnel
         self.direction = direction
         self.poses = [pos, pos - direction * 50]

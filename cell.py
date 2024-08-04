@@ -1,6 +1,7 @@
 from pygame import Surface
 from object import *
 from utils import *
+from collision import *
 from layout import *
 import random
 
@@ -18,6 +19,9 @@ class Cell(Object):
         self.locked = False
         self.has_player = False
         self.type = 'n'
+        self.cm = CollisionManager()
+        self.cm.register_strategy(Player, Wall, PlayerWallCollision())
+        self.cm.register_strategy(Player, TunnelEntry, PlayerTunnelEntryCollision())
     def is_including(self, rect: pygame.Rect) -> bool:
         for point in [rect.topleft, rect.topright, rect.bottomleft, rect.bottomright]:
             for area in self.areas:
@@ -30,11 +34,13 @@ class Cell(Object):
         self.locked = False
     def lock(self):
         self.locked = True
-    def player_enter(self):
+    def player_enter(self, player):
         self.has_player = True
+        self.cm.add_dynamic(player)
         self.lock()
-    def player_leave(self):
+    def player_leave(self, player):
         self.has_player = False
+        self.cm.remove(player)
         if self.type != 'e':
             self.unlock()
     def make_layout(self):
@@ -104,11 +110,10 @@ class SmallCell(Cell):
     def is_mergable(self) -> bool:
         return not self.locked and self.merge is None
     def make_layout(self):
-        make_layout_1(self, self.layout)
+        make_layout_1(self, self.layout, self.cm)
     def clear_layout(self):
         for tile in self.tiles:
-            if not isinstance(tile, TunnelEntry):
-                self.tiles.remove(tile)
+            self.tiles.remove(tile)
     def render_layout(self, surface: Surface):
         for tile in self.tiles:
             tile.render(surface)
@@ -132,12 +137,12 @@ class LargeCell(Cell):
         return neighbors
     def make_layout(self):
         for cell, layout in zip(self.cells, self.layouts):
-            make_layout_1(cell, layout)
+            make_layout_1(cell, layout, self.cm)
     def clear_layout(self):
         for cell in self.cells:
             for tile in cell.tiles:
-                if not isinstance(tile, TunnelEntry):
-                    cell.tiles.remove(tile)
+                cell.tiles.remove(tile)
+                self.cm.remove(tile)
     def render_layout(self, surface: Surface):
         for tile in sum([list(cell.tiles) for cell in self.cells], []):
             tile.render(surface)
@@ -234,6 +239,7 @@ class LCell(LargeCell):
     bound = [2 * CELL_WIDTH, 2 * CELL_HEIGHT]
     def __init__(self, shape, htunnel, vtunnel):
         tunnels = [htunnel, vtunnel]
+        self.shape = shape
         match shape:
             case 'ulL':
                 assert(htunnel.relations[0] is vtunnel.relations[0])
@@ -411,19 +417,19 @@ class BlockFourCell(LargeCell):
                 'u': 'W' if row == 0 else 'T',
                 'd': 'M',
                 'l': 'M',
-                'r': 'W' if col == MAZE_SIZE - 1 else 'T',
+                'r': 'W' if col+1 == MAZE_SIZE - 1 else 'T',
             },
             {
                 'u': 'M',
-                'd': 'W' if row == MAZE_SIZE - 1 else 'T',
+                'd': 'W' if row+1 == MAZE_SIZE - 1 else 'T',
                 'l': 'W' if col == 0 else 'T',
                 'r': 'M',
             },
             {
                 'u': 'M',
-                'd': 'W' if row == MAZE_SIZE - 1 else 'T',
+                'd': 'W' if row+1 == MAZE_SIZE - 1 else 'T',
                 'l': 'M',
-                'r': 'W' if col == MAZE_SIZE - 1 else 'T',
+                'r': 'W' if col+1 == MAZE_SIZE - 1 else 'T',
             }
         ]
         super().__init__(row, col, cells, tunnels, BlockFourCell.mini_bound, BlockFourCell.bound)
