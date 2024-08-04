@@ -97,8 +97,7 @@ def update():
         if pressed_keys[pygame.K_LSHIFT] or pressed_keys[pygame.K_RSHIFT]:
             max_speed = 5
     elif player.state == 'transition':
-        player.acc.x += player.facing[0] * player.speed / 2
-        player.acc.y += player.facing[1] * player.speed / 2
+        player.acc += pygame.Vector2(player.facing) * player.speed / 2
     else:
         assert(0)
     if player.vel != (0, 0):

@@ -1,4 +1,5 @@
 import pygame
+import math
 
 FONT = 'consolas'
 
@@ -25,12 +26,23 @@ lengths = {
     'l': 12,
     'r': 12
 }
+directions = {
+    'u': (math.radians(67.5), math.radians(112.5)),
+    'ur': (math.radians(22.5), math.radians(67.5)),
+    'r': (math.radians(-22.5), math.radians(22.5)),
+    'dr': (math.radians(-67.5), math.radians(-22.5)),
+    'd': (math.radians(-112.5), math.radians(-67.5)),
+    'dl': (math.radians(-157.5), math.radians(-112.5)),
+    'l': (math.radians(157.5), math.radians(-157.5)),
+    'ul': (math.radians(112.5), math.radians(157.5)),
+}
 
 glob_var = {
     "exitable": False,
     "exited": False,
     "grid": None,
     "player": None,
+    "scene": None,
     "camera": None
 }
 
@@ -39,10 +51,8 @@ def colliderect(r1: pygame.Rect, r2: pygame.Rect):
         return False
     return True
 
-def collideborder(r: pygame.Rect, b: pygame.Rect):
-    if r.left >= b.left and r.right <= b.right and r.top >= b.top and r.bottom <= b.bottom:
-        return False
-    return True
+def surpassborder(r: pygame.Rect, b: pygame.Rect):
+    return r.left >= b.right or r.right <= b.left or r.top >= b.bottom or r.bottom <= b.top
 
 def is_inside(p: pygame.Vector2, r:pygame.Rect):
     return r.left <= p.x <= r.right and r.top <= p.y <= r.bottom
@@ -51,3 +61,20 @@ def switch_cell(cell):
     glob_var["camera"].set_bound(cell.bound)
     if glob_var["player"].state != 'transition':
         glob_var["player"].move_to(cell)
+
+def get_direction(src_pos: pygame.Vector2, dest_pos: pygame.Vector2):
+    if dest_pos.x == src_pos.x:
+        if dest_pos.y <= src_pos.y:
+            return 'u'
+        else:
+            return 'd'
+    angle = -math.atan((dest_pos.y - src_pos.y) / (dest_pos.x - src_pos.x))
+    if dest_pos.x < src_pos.x:
+        if dest_pos.y >= src_pos.y:
+            angle -= math.pi
+        else:
+            angle += math.pi
+    for direction, (min_angle, max_angle) in directions.items():
+        if min_angle <= angle < max_angle:
+            return direction
+    return 'l'

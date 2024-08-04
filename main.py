@@ -7,6 +7,7 @@ from player import *
 from camera import *
 from tile import *
 from layout import *
+from projectile import *
 
 pygame.init()
 pygame.font.init()
@@ -25,8 +26,8 @@ glob_var["player"] = Player(10)
 for cell in get_all_cells():
     cell.make_layout()
 
-scene = pygame.Surface([MAZE_SIZE * CELL_WIDTH, MAZE_SIZE * CELL_HEIGHT])
-glob_var["camera"] = Camera(scene, current_cells[0].pos)
+glob_var["scene"] = pygame.Surface([MAZE_SIZE * CELL_WIDTH, MAZE_SIZE * CELL_HEIGHT])
+glob_var["camera"] = Camera(glob_var["scene"], current_cells[0].pos)
 
 glob_var["grid"].randomize()
 
@@ -35,6 +36,9 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             raise SystemExit
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == pygame.BUTTON_LEFT:
+                glob_var["player"].shoot_bullet(event.pos)
     if glob_var["player"].score >= 1 and not glob_var["exitable"]:
         glob_var["grid"].set_exit()
         glob_var["exitable"] = True
@@ -42,11 +46,14 @@ while True:
     glob_var["grid"].render_minimap(screen)
     glob_var["player"].update()
     glob_var["camera"].follow(glob_var["player"].rect.center)
-    scene.fill("black")
+    glob_var["scene"].fill("black")
     for cell in current_cells:
-        cell.render_layout(scene)
-    scene.blit(glob_var["player"].surface, glob_var["player"].rect)
-    screen.blit(scene, (MAZE_SIZE * TILE_WIDTH, 0), glob_var["camera"].rect)
+        cell.render_layout(glob_var["scene"])
+    for projectile in Projectile.all_projectiles:
+        projectile.update()
+        projectile.render(glob_var["scene"])
+    glob_var["scene"].blit(glob_var["player"].surface, glob_var["player"].rect)
+    screen.blit(glob_var["scene"], (MAZE_SIZE * TILE_WIDTH, 0), glob_var["camera"].rect)
     score_text_surface = font.render(f'Score:{glob_var["player"].score}', True, "white")
     moves_text_surface = font.render(f'Moves:{glob_var["player"].moves}', True, "white")
     screen.blit(score_text_surface, (0, MAZE_SIZE * TILE_HEIGHT))

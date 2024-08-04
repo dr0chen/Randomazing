@@ -153,7 +153,7 @@ class LargeCell(Cell):
             cell.make_layout()
         for tunnel in self.tunnels:
             tunnel.merge = None
-        LargeCell.all_large_cells.remove(self)
+        self.kill()
 
 class BlockTwoCell(LargeCell):
     outerline_h2 = [(0, 0), (100, 0), (100, 50), (0, 50)]

@@ -1,9 +1,10 @@
 from utils import *
-from object import *
+from unit import *
 from cell import *
+from projectile import *
 import random
 
-class Player(Object):
+class Player(Unit):
     def __init__(self, speed: float):
         super().__init__()
         self.surface = pygame.Surface([50, 50])
@@ -11,6 +12,9 @@ class Player(Object):
         self.rect = pygame.Rect((0, 0), [TILE_WIDTH, TILE_HEIGHT])
         self.rect.center = current_cells[0].bound.center
         self.speed = speed
+        self.health = 20
+        self.attack = 10
+        self.defence = 10
         self.vel = pygame.Vector2(0, 0)
         self.acc = pygame.Vector2(0, 0)
         self.facing = [1, 0]
@@ -22,6 +26,27 @@ class Player(Object):
         self.current_cell = current_cells[0]
         self.location = current_cells[0]
         self.location.player_enter(self)
+    def shoot_bullet(self, mouse_pos):
+        if self.state != 'free':
+            return
+        src_pos = pygame.Vector2(self.rect.center)
+        dest_pos = pygame.Vector2(glob_var["camera"].rect.topleft) + pygame.Vector2(mouse_pos) - pygame.Vector2(MAZE_SIZE * TILE_WIDTH, 0)
+        direction = get_direction(src_pos, dest_pos)
+        vel = pygame.Vector2(0, 0)
+        for c in direction:
+            match c:
+                case 'u':
+                    vel.y = -1
+                case 'd':
+                    vel.y = 1
+                case 'l':
+                    vel.x = -1
+                case 'r':
+                    vel.x = 1
+                case _:
+                    assert(0)
+        vel = vel.normalize() * 15
+        Projectile(self, self.attack, self.rect.center, vel)
     def move_to(self, next_cell):
         self.state = 'transition'
         self.current_cell.player_leave(self)
@@ -59,19 +84,21 @@ class Player(Object):
                 glob_var["grid"].randomize()
             self.location = current_cells[0]
             pressed_keys = pygame.key.get_pressed()
-            self.facing = [0, 0]
+            facing_tmp = [0, 0]
             if pressed_keys[pygame.K_LEFT] or pressed_keys[pygame.K_a]:
                 self.acc.x -= self.speed / 2
-                self.facing[0] -= 1
+                facing_tmp[0] -= 1
             if pressed_keys[pygame.K_RIGHT] or pressed_keys[pygame.K_d]:
                 self.acc.x += self.speed / 2
-                self.facing[0] += 1
+                facing_tmp[0] += 1
             if pressed_keys[pygame.K_UP] or pressed_keys[pygame.K_w]:
                 self.acc.y -= self.speed / 2
-                self.facing[1] -= 1
+                facing_tmp[1] -= 1
             if pressed_keys[pygame.K_DOWN] or pressed_keys[pygame.K_s]:
                 self.acc.y += self.speed / 2
-                self.facing[1] += 1
+                facing_tmp[1] += 1
+            if facing_tmp != [0, 0]:
+                self.facing = facing_tmp
             if pressed_keys[pygame.K_LSHIFT] or pressed_keys[pygame.K_RSHIFT]:
                 max_speed = 5
         elif self.state == 'transition':
