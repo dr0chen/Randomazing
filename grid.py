@@ -4,9 +4,10 @@ from tunnel import *
 class Grid(Object):
     def __init__(self, w, h):
         super().__init__()
-        self.surface = pygame.Surface([50 * w, 50 * h])
-        self.surface.set_colorkey("black")
-        self.surface.fill("black")
+        self.minisurface = pygame.Surface([50 * w, 50 * h])
+        # self.minisurface.set_colorkey("black")
+        self.minisurface.fill("black")
+        self.pos = pygame.Vector2(0, 0)
         self.w = w
         self.h = h
         self.should_randomize = False
@@ -91,7 +92,7 @@ class Grid(Object):
             cell.set_type('n')
         candidates = []
         for cell in all_cells:
-            if abs(cell.row - glob_var["player"].current_cell.row) + abs(cell.col - glob_var["player"].current_cell.col) <= MAZE_SIZE / 2 or cell.locked:
+            if abs(cell.row - current_cells[0].row) + abs(cell.col - current_cells[0].col) <= MAZE_SIZE / 2 or cell.locked:
                 continue
             candidates.append(cell)
         exit_cell = random.choice(candidates)
@@ -99,27 +100,30 @@ class Grid(Object):
         exit_cell.lock()
         glob_var["player"].safe_moves = 2
     def render_minimap(self, surface):
-        for cell in get_all_cells():
-            match cell.type:
-                case 'n':
-                    color = "black"
-                case 's1':
-                    color = "cyan"
-                case 's2':
-                    color = "yellow"
-                case 's-1':
-                    color = "purple"
-                case 'e':
-                    color = "lime"
+        color = "black"
+        all_cells = get_all_cells()
+        for cell in all_cells:
+            # match cell.type:
+            #     case 'n':
+            #         color = "black"
+            #     case 's1':
+            #         color = "cyan"
+            #     case 's2':
+            #         color = "yellow"
+            #     case 's-1':
+            #         color = "purple"
+            #     case 'e':
+            #         color = "lime"
             if cell.has_player:
                 pygame.draw.polygon(cell.minisurface, "red", cell.outerline)
             else:
                 pygame.draw.polygon(cell.minisurface, "white", cell.outerline)
             pygame.draw.polygon(cell.minisurface, color, cell.innerline)
-            surface.blit(cell.minisurface, cell.minipos)
-        for tunnel in all_tunnels:
-            if not tunnel.opened or tunnel.merge is not None:
+            self.minisurface.blit(cell.minisurface, cell.minipos)
+        for tunnel in Tunnel.all_tunnels:
+            if not tunnel.opened or tunnel.merge:
                 continue
-            tunnel.surface.fill("white")
-            pygame.draw.polygon(tunnel.surface, "black", tunnel.outerline)
-            surface.blit(tunnel.surface, tunnel.minipos)
+            tunnel.minisurface.fill("black")
+            pygame.draw.polygon(tunnel.minisurface, "black", tunnel.outerline)
+            self.minisurface.blit(tunnel.minisurface, tunnel.minipos)
+            surface.blit(self.minisurface, self.pos)

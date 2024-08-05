@@ -1,21 +1,17 @@
 import pygame
 from object import *
 from utils import *
-from collision import *
-from tile import *
-
-all_tunnels = pygame.sprite.Group()
+from unit import *
 
 class Tunnel(Object):
+    all_tunnels = pygame.sprite.Group()
     outerline_h = [(5, 0), (15, 0), (15, 20), (5, 20)]
-    innerline_h = []
     outerline_v = [(0, 5), (20, 5), (20, 15), (0, 15)]
-    innerline_v = []
     def __init__(self, direction: str, row, col, cell1, cell2):
         super().__init__()
-        self.surface = pygame.Surface([20, 20])
-        self.surface.set_colorkey("white")
-        self.surface.fill("white")
+        self.minisurface = pygame.Surface([20, 20])
+        self.minisurface.set_colorkey("white")
+        self.minisurface.fill("white")
         self.row = row
         self.col = col
         self.direction = direction
@@ -39,15 +35,11 @@ class Tunnel(Object):
                     'd': [pygame.Vector2(cell2.pos.x + i * TILE_WIDTH, cell2.pos.y) for i in range(6, 10)],
                     'u': [pygame.Vector2(cell1.pos.x + i * TILE_WIDTH, cell1.pos.y + CELL_HEIGHT - TILE_HEIGHT) for i in range(6, 10)]
                 }
-        all_tunnels.add(self)
+        Tunnel.all_tunnels.add(self)
         self.merge = None
         self.opened = True
         self.locked = False
-        self.cm = CollisionManager()
-        self.cm.register_strategy(Player, Wall, PlayerWallCollision())
-        self.cm.register_strategy(Player, TunnelEntry, PlayerTunnelEntryCollision())
-        self.cm.register_strategy(Projectile, Wall, ProjectileWallCollision())
-        self.cm.register_strategy(Projectile, TunnelEntry, ProjectileTunnelEntryCollision())
+        # self.cm = CollisionManager() #placeholder
     def unlock(self):
         self.locked = False
     def lock(self):

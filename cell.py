@@ -1,16 +1,17 @@
-from pygame import Surface
+import pygame
 from object import *
 from utils import *
 from collision import *
 from layout import *
+from unit import *
 import random
 
 class Cell(Object):
     def __init__(self, row, col, mini_bound, bound):
         super().__init__()
         self.minisurface = pygame.Surface(mini_bound)
-        self.minisurface.set_colorkey("black")
-        self.minisurface.fill("black")
+        self.minisurface.set_colorkey("gray")
+        self.minisurface.fill("gray")
         self.row = row
         self.col = col
         self.minipos = pygame.Vector2(TILE_WIDTH * col, TILE_HEIGHT * row)
@@ -19,11 +20,8 @@ class Cell(Object):
         self.locked = False
         self.has_player = False
         self.type = 'n'
-        self.cm = CollisionManager()
-        self.cm.register_strategy(Player, Wall, PlayerWallCollision())
-        self.cm.register_strategy(Player, TunnelEntry, PlayerTunnelEntryCollision())
-        self.cm.register_strategy(Projectile, Wall, ProjectileWallCollision())
-        self.cm.register_strategy(Projectile, TunnelEntry, ProjectileTunnelEntryCollision())
+        self.enemies = pygame.sprite.Group()
+        self.cm = deploy_cm()
     def is_including(self, rect: pygame.Rect) -> bool:
         for point in [rect.topleft, rect.topright, rect.bottomleft, rect.bottomright]:
             for area in self.areas:
@@ -102,7 +100,7 @@ class SmallCell(Cell):
         }
     def get_neighbor(self, direction: str):
         neighbor = self.neighbor_cells[direction]
-        if neighbor[1] is not None and neighbor[1].merge is not None:
+        if neighbor[1] and neighbor[1].merge:
             neighbor = (neighbor[0], neighbor[1].merge)
         return neighbor
     def get_neighbors(self):
@@ -110,13 +108,15 @@ class SmallCell(Cell):
         neighbors = [neighbor for neighbor in neighbors if neighbor != (None, None)]
         return neighbors
     def is_mergable(self) -> bool:
-        return not self.locked and self.merge is None
+        return not self.locked and not self.merge
     def make_layout(self):
         make_layout_1(self, self.layout, self.cm)
     def clear_layout(self):
         for tile in self.tiles:
             self.tiles.remove(tile)
-    def render_layout(self, surface: Surface):
+        for enemy in self.enemies:
+            enemy.kill()
+    def render_layout(self, surface: pygame.Surface):
         for tile in self.tiles:
             tile.render(surface)
 
@@ -145,7 +145,7 @@ class LargeCell(Cell):
             for tile in cell.tiles:
                 cell.tiles.remove(tile)
                 self.cm.remove(tile)
-    def render_layout(self, surface: Surface):
+    def render_layout(self, surface: pygame.Surface):
         for tile in sum([list(cell.tiles) for cell in self.cells], []):
             tile.render(surface)
     def unmerge(self):
@@ -442,4 +442,4 @@ class BlockFourCell(LargeCell):
         return False
     
 def get_all_cells():
-    return [cell for cell in SmallCell.all_small_cells if cell.merge is None] + list(LargeCell.all_large_cells)
+    return [cell for cell in SmallCell.all_small_cells if not cell.merge] + list(LargeCell.all_large_cells)

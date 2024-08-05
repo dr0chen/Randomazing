@@ -6,7 +6,6 @@ class Camera:
         self.rect = pygame.Rect(init_pos.x, init_pos.y, CELL_WIDTH, CELL_HEIGHT)
         self.bound = self.rect
         self.scene = scene
-        self.max_speed = 40
     def set_bound(self, bound):
         self.bound = bound
     def follow(self, pos):
@@ -18,8 +17,6 @@ class Camera:
         dest.bottom = min(dest.bottom, self.bound.bottom)
         delta = pygame.Vector2(dest.center) - pygame.Vector2(self.rect.center)
         speed = delta.length()
-        if speed > self.max_speed:
-            delta = delta.normalize() * self.max_speed
-        elif speed == 0 and len(current_cells) > 1:
-            current_cells.pop(0)
+        if speed > 0:
+            delta = delta.normalize() * max(speed * 0.15, min(5, speed))
         self.rect.center += delta

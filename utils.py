@@ -9,6 +9,10 @@ CELL_WIDTH = 800
 CELL_HEIGHT = 600
 TILE_WIDTH = 50
 TILE_HEIGHT = 50
+UNIT_WIDTH = 50
+UNIT_HEIGHT = 50
+ITEM_WIDTH = 20
+ITEM_HEIGHT = 20
 WIDTH = MAZE_SIZE * TILE_WIDTH + CELL_WIDTH
 HEIGHT = max(MAZE_SIZE * TILE_HEIGHT + 100, CELL_HEIGHT)
 
@@ -59,7 +63,7 @@ def is_inside(p: pygame.Vector2, r:pygame.Rect):
 
 def switch_cell(cell):
     glob_var["camera"].set_bound(cell.bound)
-    if glob_var["player"].state != 'transition':
+    if glob_var["player"].moving_state != 'transition':
         glob_var["player"].move_to(cell)
 
 def get_direction(src_pos: pygame.Vector2, dest_pos: pygame.Vector2):
@@ -78,3 +82,11 @@ def get_direction(src_pos: pygame.Vector2, dest_pos: pygame.Vector2):
         if min_angle <= angle < max_angle:
             return direction
     return 'l'
+
+def get_subclasses(cls: type):
+    subcls = [cls]
+    curr = 0
+    while curr < len(subcls):
+        subcls += subcls[curr].__subclasses__()
+        curr += 1
+    return subcls

@@ -58,29 +58,3 @@ class TunnelEntry(Tile):
             self.rect.topleft = self.poses[1]
             self.surface.fill("grey")
         surface.blit(self.surface, self.rect)
-    def handle_collision(self, player) -> bool:
-        if self.tunnel.merge is not None:
-            return False
-        if colliderect(player.rect, self.rect):
-            if self.tunnel.opened:
-                if player.vel * self.direction > 0:
-                    player.facing = [self.direction.x, self.direction.y]
-                    player.location = self.tunnel
-                    next_cell = self.next_cell if self.next_cell.merge is None else self.next_cell.merge
-                    if next_cell in current_cells:
-                        current_cells.remove(next_cell)
-                    current_cells.append(next_cell)
-                    switch_cell(next_cell)
-            else:
-                if player.vel.x > 0:
-                    player.rect.left = self.rect.left - 50
-                if player.vel.x < 0:
-                    player.rect.left = self.rect.right
-                if player.vel.y > 0:
-                    player.rect.top = self.rect.top - 50
-                if player.vel.y < 0:
-                    player.rect.top = self.rect.bottom
-                player.vel.x = 0
-                player.vel.y = 0
-            return True
-        return False
