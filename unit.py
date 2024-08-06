@@ -34,6 +34,8 @@ class Unit(pygame.sprite.Sprite):
         if self.health <= 0:
             self.health = 0
             self.dead()
+    def action(self):
+        pass
     def dead(self):
         pass
 
@@ -49,8 +51,9 @@ class Player(Unit):
         self.safe_moves = SAFE_MOVES_TOTAL
         self.moves = 0
         self.score = 0
+        self.batteries = 0
         self.shooting_interval = 500
-        self.items = [['shooter', float('INF')]]
+        self.items = [['Shooter', float('INF')]]
         self.curr_item_idx = 0
         self.last_shoot_time = pygame.time.get_ticks()
         self.location.player_enter(self)
@@ -66,16 +69,16 @@ class Player(Unit):
     def use_item(self, mouse_pos):
         curr_item = self.items[self.curr_item_idx]
         match curr_item[0]:
-            case 'shooter':
+            case 'Shooter':
                 self.shoot_bullet(mouse_pos)
-            case 'knife':
+            case 'Knife':
                 pass
-            case 'health_potion':
+            case 'Health Potion':
                 if self.health == self.max_health:
                     return
-                self.health += self.health
+                self.health += 20
                 self.health = min(self.health, self.max_health)
-            case 'key':
+            case 'Key':
                 pass
         curr_item[1] -= 1
         if curr_item[1] <= 0:
@@ -100,8 +103,58 @@ class Player(Unit):
         if self.health <= 0:
             self.health = 0
             self.dead()
+    def action(self):
+        grid = glob_var["grid"]
+        #player get acc and calc vel
+        self.acc = pygame.Vector2(0, 0)
+        max_speed = self.speed
+        if self.moving_state == 'free': #if free, read keyboard inputs
+            if grid.should_randomize:
+                grid.randomize()
+            self.location = current_cells[0]
+            pressed_keys = pygame.key.get_pressed()
+            facing_tmp = [0, 0]
+            if pressed_keys[pygame.K_LEFT] or pressed_keys[pygame.K_a]:
+                self.acc.x -= self.speed / 2
+                facing_tmp[0] -= 1
+            if pressed_keys[pygame.K_RIGHT] or pressed_keys[pygame.K_d]:
+                self.acc.x += self.speed / 2
+                facing_tmp[0] += 1
+            if pressed_keys[pygame.K_UP] or pressed_keys[pygame.K_w]:
+                self.acc.y -= self.speed / 2
+                facing_tmp[1] -= 1
+            if pressed_keys[pygame.K_DOWN] or pressed_keys[pygame.K_s]:
+                self.acc.y += self.speed / 2
+                facing_tmp[1] += 1
+            if facing_tmp != [0, 0]:
+                self.facing = facing_tmp
+            if pressed_keys[pygame.K_LSHIFT] or pressed_keys[pygame.K_RSHIFT]:
+                max_speed = 2
+                self.shield = True
+            else:
+                self.shield = False
+        elif self.moving_state == 'transition': #if in transition, move in the tunnel direction
+            self.acc.x += self.facing[0] * self.speed / 2
+            self.acc.y += self.facing[1] * self.speed / 2
+        else:
+            assert(0)
+        #friction
+        if self.vel != pygame.Vector2(0, 0):
+            self.acc -= self.vel.normalize() * 2
+        vel_tmp = self.vel + self.acc
+        if self.vel.x * vel_tmp.x < 0:
+            self.vel.x = 0
+        else:
+            self.vel.x = vel_tmp.x
+        if self.vel.y * vel_tmp.y < 0:
+            self.vel.y = 0
+        else:
+            self.vel.y = vel_tmp.y
+        #no more than max_speed
+        if self.vel.length() > max_speed:
+            self.vel = self.vel.normalize() * max_speed
     def dead(self):
-        print("yay im dead")
+        glob_var["dead"] = True
     def move_to(self, next_cell):
         self.moving_state = 'transition'
         for obj in Projectile.all_projectiles:
@@ -148,16 +201,77 @@ class Enemy(Unit):
         self.vel_tmp = self.vel.copy()
         cell.enemies.add(self)
         cell.cm.add_dynamic(self)
-    def shoot_bullet(self, target_pos: pygame.Vector2):
+    def shoot_bullet(self, target_pos: pygame.Vector2, bullet_speed):
         src_pos = pygame.Vector2(self.rect.center)
-        vel = (target_pos - src_pos).normalize() * 10 + pygame.Vector2(random.uniform(-0.8, 0.8), random.uniform(-0.8, 0.8))
+        vel = (target_pos - src_pos).normalize() * bullet_speed + pygame.Vector2(random.uniform(-0.8, 0.8), random.uniform(-0.8, 0.8))
         Projectile(self, self.attack, self.rect.center, vel, current_cells[0].cm)
     def render(self, surface):
         self.surface.fill("green")
         surface.blit(self.surface, self.rect)
         super().render(surface)
+    def action(self):
+        player = glob_var["player"]
+        curr_time = pygame.time.get_ticks()
+        match self.state:
+            case 'idle':
+                self.vel = pygame.Vector2(0, 0)
+                if curr_time > self.timer + self.idle_interval:
+                    self.state = 'move'
+                    self.timer = curr_time
+                    bias = pygame.Vector2(random.uniform(-100, 100), random.uniform(-100, 100))
+                    self.target = pygame.Vector2(player.rect.center) + (pygame.Vector2(self.rect.center) - pygame.Vector2(player.rect.center)).normalize() * 250 + bias
+                    delta = self.target - pygame.Vector2(self.rect.center)
+                    self.vel = delta.normalize() * min(self.speed, delta.length())
+            case 'move':
+                delta = self.target - pygame.Vector2(self.rect.center)
+                self.vel = delta.normalize() * min(self.speed, delta.length())
+                if curr_time > self.timer + self.move_interval or self.target == pygame.Vector2(self.rect.center):
+                    self.state = 'shoot'
+                    self.timer = curr_time
+                    self.vel = pygame.Vector2(0, 0)
+            case 'shoot':
+                self.vel = pygame.Vector2(0, 0)
+                if curr_time > self.timer + self.shoot_interval:
+                    self.shoot_bullet(pygame.Vector2(player.rect.center), 10)
+                    self.timer = curr_time
+                    self.state = 'idle'
+
     def dead(self):
         for _ in range(random.randint(1, 2)):
             vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
-            ScorePoint(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel)
+            ScorePoint(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel, None)
         self.kill()
+
+class KeyGuard(Enemy):
+    def __init__(self, cell, pos: pygame.Vector2, speed, health, attack):
+        super().__init__(cell, pos, speed, health, attack)
+    def dead(self):
+        for _ in range(random.randint(2, 4)):
+            vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
+            ScorePoint(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel, None)
+        Key(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel)
+
+class Turret(Enemy):
+    def __init__(self, cell, pos: pygame.Vector2, speed, health, attack):
+        super().__init__(cell, pos, speed, health, attack)
+    def dead(self):
+        for _ in range(random.randint(1, 3)):
+            vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
+            ScorePoint(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel, None)
+        for _ in range(random.randint(0, 1)):
+            vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
+            HealthPotion(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel)
+
+class Elite(Enemy):
+    def __init__(self, cell, pos: pygame.Vector2, speed, health, attack):
+        super().__init__(cell, pos, speed, health, attack)
+    def dead(self):
+        for _ in range(random.randint(1, 2)):
+            vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
+            ScorePoint(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel, 2)
+        for _ in range(random.randint(2, 3)):
+            vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
+            ScorePoint(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel, None)
+        for _ in range(random.randint(0, 2)):
+            vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
+            HealthPotion(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel)

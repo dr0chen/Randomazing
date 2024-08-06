@@ -7,7 +7,8 @@ contents = {
         [],
         [('enemy', pygame.Vector2(300, 300), 20, 5), 
          ('enemy', pygame.Vector2(500, 300), 20, 5)],
-        [('healthpotion', pygame.Vector2(400, 300))]
+        [('healthpotion', pygame.Vector2(400, 300))],
+        [('chest', pygame.Vector2(400, 300), [[HealthPotion]])]
     ],
     'h2': [
         []
@@ -30,6 +31,18 @@ contents = {
     '4': [
         []
     ]
+}
+
+content_weights = {
+    '1': [1, 3, 1, 0.5],
+    'h2': [1],
+    'v2': [1],
+    'ulL': [1],
+    'urL': [1],
+    'dlL': [1],
+    'drL': [1],
+    '4': [1]
+
 }
 
 def make_layout_1(cell, pos, layout, cm):

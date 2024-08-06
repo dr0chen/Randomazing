@@ -1,5 +1,6 @@
 from cell import *
 from tunnel import *
+from time import sleep
 
 class Grid(Object):
     def __init__(self, w, h):
@@ -27,65 +28,114 @@ class Grid(Object):
             if not large_cell.locked:
                 large_cell.unmerge()
         for _ in range(random.randint(0, 4)):
-            match random.choice(['2', 'L', '4']):
-                case '2':
-                    if random.randint(0, 1):
-                        tunnel = random.choice(sum(self.tunnels['h'], []))
-                    else:
-                        tunnel = random.choice(sum(self.tunnels['v'], []))
-                    cell1, cell2 = tunnel.relations
-                    if cell1.is_mergable() and cell2.is_mergable():
-                        BlockTwoCell(tunnel)
-                case 'L':
-                    row, col = random.randint(0, self.h-2), random.randint(0, self.w-2)
-                    ul_mergable = self.cells[row][col].is_mergable()
-                    ur_mergable = self.cells[row][col+1].is_mergable()
-                    dl_mergable = self.cells[row+1][col].is_mergable()
-                    dr_mergable = self.cells[row+1][col+1].is_mergable()
-                    u_mergable = ul_mergable and ur_mergable
-                    d_mergable = dl_mergable and dr_mergable
-                    l_mergable = ul_mergable and dl_mergable
-                    r_mergable = ur_mergable and dr_mergable
-                    htunnels =  [('u', self.tunnels['h'][row][col])] if u_mergable else [] + \
-                                [('d', self.tunnels['h'][row+1][col])] if d_mergable else []
-                    vtunnels =  [('l', self.tunnels['v'][row][col])] if l_mergable else [] + \
-                                [('r', self.tunnels['v'][row][col+1])] if r_mergable else []
-                    if len(htunnels) == 0 or len(vtunnels) == 0:
-                        break
-                    if len(htunnels) == 1:
-                        LCell(htunnels[0][0] + vtunnels[0][0] + 'L', htunnels[0][1], vtunnels[0][1])
-                        break
-                    i, j = random.randint(0, 1), random.randint(0, 1)
-                    LCell(htunnels[i][0] + vtunnels[j][0] + 'L', htunnels[i][1], vtunnels[j][1])
+            candidates = []
+            match random.choice(['h2', 'v2', 'ulL', 'urL', 'dlL', 'drL', '4']):
+                case 'h2':
+                    for row in range(self.h):
+                        for col in range(self.w-1):
+                            if  self.cells[row][col].is_mergable() \
+                            and self.cells[row][col+1].is_mergable():
+                                candidates.append((row, col))
+                    row, col = random.choice(candidates)
+                    BlockTwoCell(self.tunnels['h'][row][col])
+                case 'v2':
+                    for row in range(self.h-1):
+                        for col in range(self.w):
+                            if  self.cells[row][col].is_mergable() \
+                            and self.cells[row+1][col].is_mergable():
+                                candidates.append((row, col))
+                    row, col = random.choice(candidates)
+                    BlockTwoCell(self.tunnels['v'][row][col])
+                case 'ulL':
+                    for row in range(self.h-1):
+                        for col in range(self.w-1):
+                            if  self.cells[row][col].is_mergable() \
+                            and self.cells[row][col+1].is_mergable() \
+                            and self.cells[row+1][col].is_mergable():
+                                candidates.append((row, col))
+                    row, col = random.choice(candidates)
+                    LCell('ulL', self.tunnels['h'][row][col], self.tunnels['v'][row][col])
+                case 'urL':
+                    for row in range(self.h-1):
+                        for col in range(self.w-1):
+                            if  self.cells[row][col].is_mergable() \
+                            and self.cells[row][col+1].is_mergable() \
+                            and self.cells[row+1][col+1].is_mergable():
+                                candidates.append((row, col))
+                    row, col = random.choice(candidates)
+                    LCell('urL', self.tunnels['h'][row][col], self.tunnels['v'][row][col+1])
+                case 'dlL':
+                    for row in range(self.h-1):
+                        for col in range(self.w-1):
+                            if  self.cells[row][col].is_mergable() \
+                            and self.cells[row+1][col].is_mergable() \
+                            and self.cells[row+1][col+1].is_mergable():
+                                candidates.append((row, col))
+                    row, col = random.choice(candidates)
+                    LCell('dlL', self.tunnels['h'][row+1][col], self.tunnels['v'][row][col])
+                case 'drL':
+                    for row in range(self.h-1):
+                        for col in range(self.w-1):
+                            if  self.cells[row][col+1].is_mergable() \
+                            and self.cells[row+1][col].is_mergable() \
+                            and self.cells[row+1][col+1].is_mergable():
+                                candidates.append((row, col))
+                    row, col = random.choice(candidates)
+                    LCell('drL', self.tunnels['h'][row+1][col], self.tunnels['v'][row][col+1])
                 case '4':
-                    row, col = random.randint(0, self.h-2), random.randint(0, self.w-2)
-                    if  self.cells[row][col].is_mergable() and \
-                        self.cells[row+1][col].is_mergable() and \
-                        self.cells[row][col+1].is_mergable() and \
-                        self.cells[row+1][col+1].is_mergable():
-                        BlockFourCell(self.tunnels['h'][row][col], self.tunnels['h'][row+1][col], \
-                                      self.tunnels['v'][row][col], self.tunnels['v'][row][col+1])
+                    for row in range(self.h-1):
+                        for col in range(self.w-1):
+                            if  self.cells[row][col].is_mergable() \
+                            and self.cells[row][col+1].is_mergable() \
+                            and self.cells[row+1][col].is_mergable() \
+                            and self.cells[row+1][col+1].is_mergable():
+                                candidates.append((row, col))
+                    row, col = random.choice(candidates)
+                    BlockFourCell(self.tunnels['h'][row][col], self.tunnels['h'][row+1][col],
+                                  self.tunnels['v'][row][col], self.tunnels['v'][row][col+1])
         ## remerge ends ##
         all_cells = get_all_cells()
-        ## random first search ##
-        visited = []
-        queue = [(None, random.choice(all_cells))]
-        while len(queue) > 0:
-            prev_tunnel, cell = random.choice(queue)
-            queue = [item for item in queue if item != (prev_tunnel, cell)]
-            if cell in visited :
-                prob = 15 if not glob_var["exitable"] else 5
-                if random.randint(1, 100) <= prob:
-                    prev_tunnel.set_state(True)
+        ## wilson's algorithm ##
+        for tunnel in Tunnel.all_tunnels:
+            tunnel.set_state(False)
+        visited = [random.choice(all_cells)]
+        unvisited = [cell for cell in all_cells if cell not in visited]
+        assert(len(visited) + len(unvisited) == len(all_cells))
+        curr = random.choice(unvisited)
+        prev = None
+        path = [curr]
+        tunnel_path = []
+        while True:
+            assert(len(visited) + len(unvisited) == len(all_cells))
+            tunnel, next_cell = random.choice([(tunnel, neighbor) for tunnel, neighbor in curr.get_neighbors() if neighbor is not prev])
+            if next_cell not in visited:
+                if next_cell in path:
+                    idx = path.index(next_cell)
+                    prev = path[idx - 1] if idx > 0 else None
+                    path = path[0:idx + 1]
+                    tunnel_path = tunnel_path[:idx]
                 else:
-                    prev_tunnel.set_state(False)
+                    path.append(next_cell)
+                    tunnel_path.append(tunnel)
+                    prev = curr
             else:
-                if prev_tunnel is not None:
-                    prev_tunnel.set_state(True)
-                visited.append(cell)
-                neighbors = [(tunnel, next_cell) for tunnel, next_cell in cell.get_neighbors() if tunnel != prev_tunnel]
-                queue += neighbors
-        ## random first search ends ##
+                tunnel_path.append(tunnel)
+                for cell in path:
+                    visited.append(cell)
+                    unvisited.remove(cell)
+                for tunnel in tunnel_path:
+                    tunnel.set_state(True)
+                if len(unvisited) == 0:
+                    break
+                next_cell = random.choice(unvisited)
+                path = [next_cell]
+                tunnel_path = []
+                prev = None
+            curr = next_cell
+        ## wilson's algorithm ends ##
+        for tunnel in Tunnel.all_tunnels:
+            if random.randint(1, 100) <= 20:
+                tunnel.set_state(True)
         ## randomize content for each cell ##
         for cell in all_cells:
             cell.randomize()

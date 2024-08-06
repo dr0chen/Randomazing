@@ -64,6 +64,10 @@ class Cell(Object):
                 case 'healthpotion':
                     pos = obj[1]
                     HealthPotion(self, pos, pygame.Vector2(0, 0))
+                case 'chest':
+                    pos = obj[1]
+                    items = obj[2]
+                    Chest(self, pos, items)
     def clear_content(self):
         for obj in self.cm.dynamic_objects:
             if type(obj) is not Player:
@@ -76,7 +80,9 @@ class Cell(Object):
     def randomize(self) -> bool:
         if self.locked:
             return False
-        self.set_content(random.choice(contents[self.shape]))
+        candidates = contents[self.shape]
+        weights = content_weights[self.shape]
+        self.set_content(random.choices(candidates, weights=weights)[0])
 
 class SmallCell(Cell):
     outerline = [(0, 0), (50, 0), (50, 50), (0, 50)]
@@ -113,7 +119,7 @@ class SmallCell(Cell):
             neighbor = (neighbor[0], neighbor[1].merge)
         return neighbor
     def get_neighbors(self):
-        neighbors = map(lambda x: self.neighbor_cells[x], 'udlr')
+        neighbors = map(lambda x: self.get_neighbor(x), 'udlr')
         neighbors = [neighbor for neighbor in neighbors if neighbor != (None, None)]
         return neighbors
     def close_down(self):

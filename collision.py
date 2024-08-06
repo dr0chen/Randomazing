@@ -11,41 +11,45 @@ class CollisionStrategy:
 
 class StopStrategy(CollisionStrategy):
     def handle_collision(self, obj1, obj2):
-        if obj1.vel.x > 0:
-            obj1.rect.left = obj2.rect.left - obj1.rect.w
-        if obj1.vel.x < 0:
-            obj1.rect.left = obj2.rect.right
-        if obj1.vel.y > 0:
-            obj1.rect.top = obj2.rect.top - obj1.rect.h
-        if obj1.vel.y < 0:
-            obj1.rect.top = obj2.rect.bottom
-        obj1.vel.x = 0
-        obj1.vel.y = 0
+        if colliderect(obj1.rect, obj2.rect):
+            if obj1.vel.x > 0:
+                obj1.rect.left = obj2.rect.left - obj1.rect.w
+            if obj1.vel.x < 0:
+                obj1.rect.left = obj2.rect.right
+            if obj1.vel.y > 0:
+                obj1.rect.top = obj2.rect.top - obj1.rect.h
+            if obj1.vel.y < 0:
+                obj1.rect.top = obj2.rect.bottom
+            obj1.vel.x = 0
+            obj1.vel.y = 0
 
 class TunnelStrategy(StopStrategy):
     def handle_collision(self, player, tunnel_entry):
         if tunnel_entry.tunnel.merge:
             return
-        if tunnel_entry.tunnel.opened and not tunnel_entry.tunnel.closed_down:
-            if player.vel * tunnel_entry.direction > 0:
-                player.facing = [tunnel_entry.direction.x, tunnel_entry.direction.y]
-                player.vel = player.speed * pygame.Vector2(player.facing)
-                player.location = tunnel_entry.tunnel
-                next_cell = tunnel_entry.next_cell if not tunnel_entry.next_cell.merge else tunnel_entry.next_cell.merge
-                if next_cell in current_cells:
-                    current_cells.remove(next_cell)
-                current_cells.append(next_cell)
-                switch_cell(next_cell)
-        else:
-            super().handle_collision(player, tunnel_entry)
+        if colliderect(player.rect, tunnel_entry.rect):
+            if tunnel_entry.tunnel.opened and not tunnel_entry.tunnel.merge and not tunnel_entry.tunnel.closed_down:
+                if player.vel * tunnel_entry.direction > 0:
+                    player.facing = [tunnel_entry.direction.x, tunnel_entry.direction.y]
+                    player.vel = player.speed * pygame.Vector2(player.facing)
+                    player.location = tunnel_entry.tunnel
+                    next_cell = tunnel_entry.next_cell if not tunnel_entry.next_cell.merge else tunnel_entry.next_cell.merge
+                    if next_cell in current_cells:
+                        current_cells.remove(next_cell)
+                    current_cells.append(next_cell)
+                    switch_cell(next_cell)
+            else:
+                super().handle_collision(player, tunnel_entry)
 
 class VanishStrategy(CollisionStrategy):
     def handle_collision(self, obj1, obj2):
-        obj1.kill()
+        if colliderect(obj1.rect, obj2.rect):
+            obj1.kill()
 
 class FuncStrategy(CollisionStrategy):
     def handle_collision(self, obj1, obj2):
-        obj1.func(obj2)
+        if colliderect(obj1.rect, obj2.rect):
+            obj1.func(obj2)
 
 class CollisionManager:
     def __init__(self):
@@ -73,7 +77,7 @@ class CollisionManager:
         for obj1 in self.dynamic_objects:
             for obj2 in list(self.static_objects) + list(self.dynamic_objects):
                 strategy = self.get_strategy(obj1, obj2)
-                if strategy and colliderect(obj1.rect, obj2.rect):
+                if strategy:
                     strategy.handle_collision(obj1, obj2)
 
 ss = StopStrategy()
@@ -84,6 +88,7 @@ fs = FuncStrategy()
 def deploy_cm() -> CollisionManager:
     cm = CollisionManager()
     cm.register_strategy(Unit, Wall, ss)
+    cm.register_strategy(Unit, Chest, ss)
     cm.register_strategy(Player, TunnelEntry, ts)
     cm.register_strategy(Enemy, TunnelEntry, ss)
     cm.register_strategy(Projectile, Wall, vs)

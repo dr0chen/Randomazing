@@ -21,9 +21,12 @@ class DroppedItems(pygame.sprite.Sprite):
         pass
 
 class ScorePoint(DroppedItems):
-    def __init__(self, cell, pos: pygame.Vector2, vel: pygame.Vector2):
+    def __init__(self, cell, pos: pygame.Vector2, vel: pygame.Vector2, score):
         super().__init__(cell, pos, vel)
-        self.score = random.randint(1, 2)
+        if not score:
+            self.score = random.randint(1, 2)
+        else:
+            self.score = score
     def render(self, surface):
         match self.score:
             case 1:
@@ -35,13 +38,42 @@ class ScorePoint(DroppedItems):
         player.score += self.score
         self.kill()
 
+class Battery(DroppedItems):
+    def __init__(self, cell, pos: pygame.Vector2, vel: pygame.Vector2):
+        super().__init__(cell, pos, vel)
+    def render(self, surface):
+        self.surface.fill("blue")
+        surface.blit(self.surface,self.rect)
+    def picked_up(self, player):
+        player.batteries += 1
+        self.kill()
+
 class HealthPotion(DroppedItems):
     def __init__(self, cell, pos: pygame.Vector2, vel: pygame.Vector2):
         super().__init__(cell, pos, vel)
-        self.health = 20
     def render(self, surface):
         self.surface.fill("pink")
         surface.blit(self.surface, self.rect)
     def picked_up(self, player):
-        player.pickup_item("health_potion", 1)
+        player.pickup_item("Health Potion", 1)
         self.kill()
+
+class Key(DroppedItems):
+    def __init__(self, cell, pos: pygame.Vector2, vel: pygame.Vector2):
+        super().__init__(cell, pos, vel)
+    def render(self, surface):
+        self.surface.fill("brown")
+        surface.blit(self.surface, self.rect)
+    def picked_up(self, player):
+        player.pickup_item("Key", 1)
+        self.kill()
+
+class Shooter(DroppedItems):
+    def __init__(self, cell, pos: pygame.Vector2, vel: pygame.Vector2):
+        super().__init__(cell, pos, vel)
+    def render(self, surface):
+        self.surface.fill("gold")
+        surface.blit(self.surface, self.rect)
+    def picked_up(self, player):
+        player.pickup_item("Shooter", 1)
+        self.kill()    

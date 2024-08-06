@@ -1,12 +1,64 @@
 import pygame
+import random
 from utils import *
 from cell import *
-from projectile import *
-from droppeditem import *
+from grid import *
+from unit import *
+from camera import *
+from infotab import *
+
+def init():
+    pygame.init()
+    pygame.font.init()
+
+    glob_var["font"] = pygame.font.Font(pygame.font.match_font('consolas'), 20)
+    glob_var["screen"] = pygame.display.set_mode((WIDTH, HEIGHT))
+    glob_var["clock"] = pygame.time.Clock()
+    glob_var["timer"] = pygame.time.get_ticks()
+
+    glob_var["grid"] = Grid(MAZE_SIZE, MAZE_SIZE)
+    current_cells.append(glob_var["grid"].cells[MAZE_SIZE // 2][MAZE_SIZE // 2])
+    glob_var["player"] = Player(current_cells[0], 7, 100, 10)
+    glob_var["infotab"] = Infotab(glob_var["font"], glob_var["player"])
+
+    for cell in get_all_cells():
+        cell.make_layout()
+
+    glob_var["scene"] = pygame.Surface([MAZE_SIZE * CELL_WIDTH, MAZE_SIZE * CELL_HEIGHT])
+    glob_var["camera"] = Camera(glob_var["scene"], current_cells[0].pos)
+
+    glob_var["grid"].randomize()
+
+def poll_event():
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            raise SystemExit
+        if glob_var["dead"] or glob_var["time_up"] or glob_var["exited"]:
+            continue
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == pygame.BUTTON_LEFT:
+                glob_var["player"].use_item(event.pos)
+            elif event.button == pygame.BUTTON_RIGHT:
+                glob_var["player"].switch_item()
 
 def update():
     player = glob_var["player"]
     grid = glob_var["grid"]
+    camera = glob_var["camera"]
+    grid = glob_var["grid"]
+
+    #global status check
+    if glob_var["timer"] // 1000 >= glob_var["timelimit_1"] and not glob_var["exitable"]:
+        glob_var["time_up"] = True
+    elif glob_var["timer"] // 1000 >= glob_var["timelimit_2"] and glob_var["exitable"]:
+        glob_var["time_up"] = True
+    
+    if glob_var["dead"] or glob_var["time_up"] or glob_var["exited"]:
+        return
+    if player.batteries >= 10 and not glob_var["exitable"]:
+        grid.set_exit()
+        glob_var["exitable"] = True
 
     #if enemies in cell, close down
     if len(current_cells[0].enemies) > 0:
@@ -15,82 +67,11 @@ def update():
     else:
         current_cells[0].open_up()
     
-    #enemies action
-    curr_time = pygame.time.get_ticks()
+    #units action
     for enemy in current_cells[0].enemies:
-        match enemy.state:
-            case 'idle':
-                enemy.vel = pygame.Vector2(0, 0)
-                if curr_time > enemy.timer + enemy.idle_interval:
-                    enemy.state = 'move'
-                    enemy.timer = curr_time
-                    bias = pygame.Vector2(random.uniform(-100, 100), random.uniform(-100, 100))
-                    enemy.target = pygame.Vector2(player.rect.center) + (pygame.Vector2(enemy.rect.center) - pygame.Vector2(player.rect.center)).normalize() * 250 + bias
-                    delta = enemy.target - pygame.Vector2(enemy.rect.center)
-                    enemy.vel = delta.normalize() * min(enemy.speed, delta.length())
-            case 'move':
-                delta = enemy.target - pygame.Vector2(enemy.rect.center)
-                enemy.vel = delta.normalize() * min(enemy.speed, delta.length())
-                if curr_time > enemy.timer + enemy.move_interval or enemy.target == pygame.Vector2(enemy.rect.center):
-                    enemy.state = 'shoot'
-                    enemy.timer = curr_time
-                    enemy.vel = pygame.Vector2(0, 0)
-            case 'shoot':
-                enemy.vel = pygame.Vector2(0, 0)
-                if curr_time > enemy.timer + enemy.shoot_interval:
-                    enemy.shoot_bullet(pygame.Vector2(glob_var["player"].rect.center))
-                    enemy.timer = curr_time
-                    enemy.state = 'idle'
-
-    #player get acc and calc vel
-    player.acc = pygame.Vector2(0, 0)
-    max_speed = player.speed
-    if player.moving_state == 'free': #if free, read keyboard inputs
-        if grid.should_randomize:
-            grid.randomize()
-        player.location = current_cells[0]
-        pressed_keys = pygame.key.get_pressed()
-        facing_tmp = [0, 0]
-        if pressed_keys[pygame.K_LEFT] or pressed_keys[pygame.K_a]:
-            player.acc.x -= player.speed / 2
-            facing_tmp[0] -= 1
-        if pressed_keys[pygame.K_RIGHT] or pressed_keys[pygame.K_d]:
-            player.acc.x += player.speed / 2
-            facing_tmp[0] += 1
-        if pressed_keys[pygame.K_UP] or pressed_keys[pygame.K_w]:
-            player.acc.y -= player.speed / 2
-            facing_tmp[1] -= 1
-        if pressed_keys[pygame.K_DOWN] or pressed_keys[pygame.K_s]:
-            player.acc.y += player.speed / 2
-            facing_tmp[1] += 1
-        if facing_tmp != [0, 0]:
-            player.facing = facing_tmp
-        if pressed_keys[pygame.K_LSHIFT] or pressed_keys[pygame.K_RSHIFT]:
-            max_speed = 2
-            player.shield = True
-        else:
-            player.shield = False
-    elif player.moving_state == 'transition': #if in transition, move in the tunnel direction
-        player.acc.x += player.facing[0] * player.speed / 2
-        player.acc.y += player.facing[1] * player.speed / 2
-    else:
-        assert(0)
-
-    #player friction
-    if player.vel != pygame.Vector2(0, 0):
-        player.acc -= player.vel.normalize() * 2
-    vel_tmp = player.vel + player.acc
-    if player.vel.x * vel_tmp.x < 0:
-        player.vel.x = 0
-    else:
-        player.vel.x = vel_tmp.x
-    if player.vel.y * vel_tmp.y < 0:
-        player.vel.y = 0
-    else:
-        player.vel.y = vel_tmp.y
-    #no more than max_speed
-    if player.vel.length() > max_speed:
-        player.vel = player.vel.normalize() * max_speed
+        enemy.action()
+    player.action()
+    
     #item friction
     for item in DroppedItems.all_items:
         item.acc = pygame.Vector2(0, 0)
@@ -176,3 +157,32 @@ def update():
     if player.moving_state == 'free' and len(current_cells) > 1:
         current_cells.pop(0)
     
+    #camera movement
+    camera.follow(player.rect.center)
+
+    #timer update
+    glob_var["timer"] = pygame.time.get_ticks()
+
+def render():
+    screen = glob_var["screen"]
+    grid = glob_var["grid"]
+    scene = glob_var["scene"]
+    player = glob_var["player"]
+    camera = glob_var["camera"]
+    infotab = glob_var["infotab"]
+
+    #objects rendering
+    screen.fill("black")
+    scene.fill("black")
+    grid.render_minimap(screen)
+    for cell in current_cells:
+        cell.render_layout(scene)
+        cell.render_content(scene)
+    for projectile in Projectile.all_projectiles:
+        projectile.render(scene)
+    player.render(scene)
+    screen.blit(scene, (MAZE_SIZE * TILE_WIDTH, 0), glob_var["camera"].rect)
+    infotab.render(screen)
+
+    #flip!
+    pygame.display.flip()

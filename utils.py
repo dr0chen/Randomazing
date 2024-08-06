@@ -46,10 +46,19 @@ directions = {
 glob_var = {
     "exitable": False,
     "exited": False,
+    "dead": False,
+    "time_up": False,
     "grid": None,
     "player": None,
     "scene": None,
-    "camera": None
+    "camera": None,
+    "font": None,
+    "screen": None,
+    "infotab": None,
+    "clock": None,
+    "timer": None,
+    "timelimit_1": 1200,
+    "timelimit_2": 120
 }
 
 def colliderect(r1: pygame.Rect, r2: pygame.Rect):
