@@ -7,7 +7,8 @@ class Projectile(pygame.sprite.Sprite):
         super().__init__()
         self.surface = pygame.Surface([10, 10])
         self.surface.fill("yellow")
-        self.rect = pygame.Rect(pos, [10, 10])
+        self.rect = pygame.Rect((0, 0), [10, 10])
+        self.rect.center = pos
         self.damage = damage
         self.vel = vel
         self.owner = owner

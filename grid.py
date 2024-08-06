@@ -17,6 +17,11 @@ class Grid(Object):
             'v': [[Tunnel('v', i, j, self.cells[i][j], self.cells[i+1][j]) for j in range(w)] for i in range(h - 1)]
         }
     def randomize(self):
+        ## clear dynamic objects##
+        for cell in get_all_cells():
+            if not cell.locked:
+                cell.clear_content()
+        ## clear dynamic objects end##
         ## remerge cells ##
         for large_cell in LargeCell.all_large_cells.copy():
             if not large_cell.locked:
@@ -61,8 +66,8 @@ class Grid(Object):
                         BlockFourCell(self.tunnels['h'][row][col], self.tunnels['h'][row+1][col], \
                                       self.tunnels['v'][row][col], self.tunnels['v'][row][col+1])
         ## remerge ends ##
-        ## random first search ##
         all_cells = get_all_cells()
+        ## random first search ##
         visited = []
         queue = [(None, random.choice(all_cells))]
         while len(queue) > 0:
@@ -81,22 +86,23 @@ class Grid(Object):
                 neighbors = [(tunnel, next_cell) for tunnel, next_cell in cell.get_neighbors() if tunnel != prev_tunnel]
                 queue += neighbors
         ## random first search ends ##
-        ## randomize type for each cell ##
+        ## randomize content for each cell ##
         for cell in all_cells:
             cell.randomize()
-        ## randomize type for each cell ends ##
+            cell.make_content()
+        ## randomize content for each cell ends ##
         self.should_randomize = False
     def set_exit(self):
         all_cells = get_all_cells()
         for cell in all_cells:
-            cell.set_type('n')
+            cell.set_content([])
         candidates = []
         for cell in all_cells:
             if abs(cell.row - current_cells[0].row) + abs(cell.col - current_cells[0].col) <= MAZE_SIZE / 2 or cell.locked:
                 continue
             candidates.append(cell)
         exit_cell = random.choice(candidates)
-        exit_cell.set_type('e')
+        exit_cell.set_content([])
         exit_cell.lock()
         glob_var["player"].safe_moves = 2
     def render_minimap(self, surface):

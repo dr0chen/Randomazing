@@ -18,7 +18,7 @@ clock = pygame.time.Clock()
 
 glob_var["grid"] = Grid(MAZE_SIZE, MAZE_SIZE)
 current_cells.append(glob_var["grid"].cells[MAZE_SIZE // 2][MAZE_SIZE // 2])
-glob_var["player"] = Player(current_cells[0], 5, 100, 10)
+glob_var["player"] = Player(current_cells[0], 7, 100, 10)
 
 for cell in get_all_cells():
     cell.make_layout()
@@ -27,8 +27,6 @@ glob_var["scene"] = pygame.Surface([MAZE_SIZE * CELL_WIDTH, MAZE_SIZE * CELL_HEI
 glob_var["camera"] = Camera(glob_var["scene"], current_cells[0].pos)
 
 glob_var["grid"].randomize()
-
-enemy = Enemy(current_cells[0], pygame.Vector2(200, 200), 5, 20, 5)
 
 while True:
     for event in pygame.event.get():
@@ -48,12 +46,9 @@ while True:
     glob_var["scene"].fill("black")
     for cell in current_cells:
         cell.render_layout(glob_var["scene"])
-        for enemy in cell.enemies:
-            enemy.render(glob_var["scene"])
+        cell.render_content(glob_var["scene"])
     for projectile in Projectile.all_projectiles:
         projectile.render(glob_var["scene"])
-    for item in DroppedItems.all_items:
-        item.render(glob_var["scene"])
     glob_var["player"].render(glob_var["scene"])
     screen.blit(glob_var["scene"], (MAZE_SIZE * TILE_WIDTH, 0), glob_var["camera"].rect)
     score_text_surface = font.render(f'Score:{glob_var["player"].score}', True, "white")

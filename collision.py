@@ -12,11 +12,11 @@ class CollisionStrategy:
 class StopStrategy(CollisionStrategy):
     def handle_collision(self, obj1, obj2):
         if obj1.vel.x > 0:
-            obj1.rect.left = obj2.rect.left - 50
+            obj1.rect.left = obj2.rect.left - obj1.rect.w
         if obj1.vel.x < 0:
             obj1.rect.left = obj2.rect.right
         if obj1.vel.y > 0:
-            obj1.rect.top = obj2.rect.top - 50
+            obj1.rect.top = obj2.rect.top - obj1.rect.h
         if obj1.vel.y < 0:
             obj1.rect.top = obj2.rect.bottom
         obj1.vel.x = 0

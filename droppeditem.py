@@ -1,17 +1,18 @@
 import pygame
+import random
 from utils import *
 
 class DroppedItems(pygame.sprite.Sprite):
     all_items = pygame.sprite.Group()
-    def __init__(self, pos: pygame.Vector2, vel: pygame.Vector2, cm):
+    def __init__(self, cell, pos: pygame.Vector2, vel: pygame.Vector2):
         super().__init__()
         self.surface = pygame.Surface([ITEM_WIDTH, ITEM_HEIGHT])
-        self.rect = pygame.Rect(pos, [ITEM_WIDTH, ITEM_HEIGHT])
+        self.rect = pygame.Rect((0, 0), [ITEM_WIDTH, ITEM_HEIGHT])
+        self.rect.center = cell.pos + pos
         self.vel = vel
         self.vel_tmp = vel.copy()
         self.acc = pygame.Vector2(0, 0)
-        self.cm = cm
-        self.cm.add_dynamic(self)
+        cell.cm.add_dynamic(self)
         self.func = self.picked_up
         DroppedItems.all_items.add(self)
     def render(self, surface):
@@ -20,12 +21,30 @@ class DroppedItems(pygame.sprite.Sprite):
         pass
 
 class ScorePoint(DroppedItems):
-    def __init__(self, pos: pygame.Vector2, vel: pygame.Vector2, cm):
-        super().__init__(pos, vel, cm)
-        self.score = 1
+    def __init__(self, cell, pos: pygame.Vector2, vel: pygame.Vector2):
+        super().__init__(cell, pos, vel)
+        self.score = random.randint(1, 2)
     def render(self, surface):
-        self.surface.fill("cyan")
+        match self.score:
+            case 1:
+                self.surface.fill("cyan")
+            case 2:
+                self.surface.fill("yellow")
         surface.blit(self.surface, self.rect)
     def picked_up(self, player):
         player.score += self.score
+        self.kill()
+
+class HealthPotion(DroppedItems):
+    def __init__(self, cell, pos: pygame.Vector2, vel: pygame.Vector2):
+        super().__init__(cell, pos, vel)
+        self.health = 20
+    def render(self, surface):
+        self.surface.fill("pink")
+        surface.blit(self.surface, self.rect)
+    def picked_up(self, player):
+        if player.health == player.max_health:
+            return
+        player.health += self.health
+        player.health = min(player.health, player.max_health)
         self.kill()

@@ -1,7 +1,38 @@
 from cell import *
 from tile import *
+from unit import *
 
-def make_layout_1(cell, layout, cm):
+contents = {
+    '1': [
+        [],
+        [('enemy', pygame.Vector2(300, 300), 20, 5), 
+         ('enemy', pygame.Vector2(500, 300), 20, 5)],
+        [('healthpotion', pygame.Vector2(400, 300))]
+    ],
+    'h2': [
+        []
+    ],
+    'v2': [
+        []
+    ],
+    'ulL': [
+        []
+    ],
+    'urL': [
+        []
+    ],
+    'dlL': [
+        []
+    ],
+    'drL': [
+        []
+    ],
+    '4': [
+        []
+    ]
+}
+
+def make_layout_1(cell, pos, layout, cm):
     cell.tiles.add(Wall(cell.pos, cm))
     cell.tiles.add(Wall(cell.pos + (CELL_WIDTH - 50, 0), cm))
     cell.tiles.add(Wall(cell.pos + (0, CELL_HEIGHT - 50), cm))

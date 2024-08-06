@@ -19,7 +19,7 @@ class Cell(Object):
         self.bound = pygame.Rect(self.pos, bound)
         self.locked = False
         self.has_player = False
-        self.type = 'n'
+        self.content = []
         self.enemies = pygame.sprite.Group()
         self.cm = deploy_cm()
     def is_including(self, rect: pygame.Rect) -> bool:
@@ -36,12 +36,15 @@ class Cell(Object):
         self.locked = True
     def player_enter(self, player):
         self.has_player = True
+        curr_time = pygame.time.get_ticks()
+        for enemy in self.enemies:
+            enemy.last_shoot_time = curr_time
         self.cm.add_dynamic(player)
         self.lock()
     def player_leave(self, player):
         self.has_player = False
         self.cm.remove(player)
-        if self.type != 'e':
+        if self.content != 'e':
             self.unlock()
     def make_layout(self):
         pass
@@ -49,25 +52,30 @@ class Cell(Object):
         pass
     def render_layout(self, surface: pygame.Surface):
         pass
-    def set_type(self, type: str):
-        self.type = type
+    def make_content(self):
+        for obj in self.content:
+            match obj[0]:
+                case 'enemy':
+                    pos = obj[1]
+                    health = obj[2]
+                    attack = obj[3]
+                    Enemy(self, pos, 7, health, attack)
+                case 'healthpotion':
+                    pos = obj[1]
+                    HealthPotion(self, pos, pygame.Vector2(0, 0))
+    def clear_content(self):
+        for obj in self.cm.dynamic_objects:
+            if type(obj) is not Player:
+                obj.kill()
+    def render_content(self, surface):
+        for obj in self.cm.dynamic_objects:
+            obj.render(surface)
+    def set_content(self, content):
+        self.content = content
     def randomize(self) -> bool:
         if self.locked:
             return False
-        if glob_var["exitable"]:
-            if self.type != 'e':
-                self.set_type('n')
-            return True
-        r = random.randint(1, 100)
-        if r > 40:
-            self.set_type('n')
-        elif r > 15:
-            self.set_type('s1')
-        elif r > 5:
-            self.set_type('s-1')
-        else:
-            self.set_type('s2')
-        return True
+        self.set_content(random.choice(contents[self.shape]))
 
 class SmallCell(Cell):
     outerline = [(0, 0), (50, 0), (50, 50), (0, 50)]
@@ -88,7 +96,7 @@ class SmallCell(Cell):
             'u': 'W' if row == 0 else 'T',
             'd': 'W' if row == MAZE_SIZE-1 else 'T',
             'l': 'W' if col == 0 else 'T',
-            'r': 'W' if col == MAZE_SIZE-1 else 'T',
+            'r': 'W' if col == MAZE_SIZE-1 else 'T'
         }
         self.merge = None
         self.tiles = pygame.sprite.Group()
@@ -110,12 +118,10 @@ class SmallCell(Cell):
     def is_mergable(self) -> bool:
         return not self.locked and not self.merge
     def make_layout(self):
-        make_layout_1(self, self.layout, self.cm)
+        make_layout_1(self, self.pos, self.layout, self.cm)
     def clear_layout(self):
         for tile in self.tiles:
             self.tiles.remove(tile)
-        for enemy in self.enemies:
-            enemy.kill()
     def render_layout(self, surface: pygame.Surface):
         for tile in self.tiles:
             tile.render(surface)
@@ -139,12 +145,11 @@ class LargeCell(Cell):
         return neighbors
     def make_layout(self):
         for cell, layout in zip(self.cells, self.layouts):
-            make_layout_1(cell, layout, self.cm)
+            make_layout_1(cell, self.pos, layout, self.cm)
     def clear_layout(self):
         for cell in self.cells:
             for tile in cell.tiles:
-                cell.tiles.remove(tile)
-                self.cm.remove(tile)
+                tile.kill()
     def render_layout(self, surface: pygame.Surface):
         for tile in sum([list(cell.tiles) for cell in self.cells], []):
             tile.render(surface)
@@ -155,6 +160,8 @@ class LargeCell(Cell):
             cell.make_layout()
         for tunnel in self.tunnels:
             tunnel.merge = None
+        for obj in self.cm.dynamic_objects:
+            obj.kill()
         self.kill()
 
 class BlockTwoCell(LargeCell):

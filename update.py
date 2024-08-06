@@ -8,6 +8,13 @@ def update():
     player = glob_var["player"]
     grid = glob_var["grid"]
 
+    #enemies action
+    curr_time = pygame.time.get_ticks()
+    for enemy in current_cells[0].enemies:
+        if curr_time > enemy.last_shoot_time + enemy.shoot_interval:
+            enemy.shoot_bullet(pygame.Vector2(glob_var["player"].rect.center))
+            enemy.last_shoot_time = curr_time
+
     #player get acc and calc vel
     player.acc = pygame.Vector2(0, 0)
     max_speed = player.speed
@@ -44,7 +51,7 @@ def update():
 
     #player friction
     if player.vel != pygame.Vector2(0, 0):
-        player.acc -= player.vel.normalize()
+        player.acc -= player.vel.normalize() * 2
     vel_tmp = player.vel + player.acc
     if player.vel.x * vel_tmp.x < 0:
         player.vel.x = 0
@@ -61,7 +68,7 @@ def update():
     for item in DroppedItems.all_items:
         item.acc = pygame.Vector2(0, 0)
         if item.vel != pygame.Vector2(0, 0):
-            item.acc -= item.vel.normalize()
+            item.acc -= item.vel.normalize() * 0.8
         vel_tmp = item.vel + item.acc
         if item.vel.x * vel_tmp.x < 0:
             item.vel.x = 0
@@ -121,13 +128,6 @@ def update():
             projectile.rect.center += projectile.vel
         for item in DroppedItems.all_items:
             item.rect.center += item.vel
-
-    #enemies action
-    curr_time = pygame.time.get_ticks()
-    for enemy in current_cells[0].enemies:
-        if curr_time > enemy.last_shoot_time + enemy.shoot_interval:
-            enemy.shoot_bullet(pygame.Vector2(glob_var["player"].rect.center))
-            enemy.last_shoot_time = curr_time
 
     #player moving_state recover from transition
     if current_cells[-1].is_including(player.rect):

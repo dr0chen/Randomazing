@@ -18,5 +18,5 @@ class Camera:
         delta = pygame.Vector2(dest.center) - pygame.Vector2(self.rect.center)
         speed = delta.length()
         if speed > 0:
-            delta = delta.normalize() * max(speed * 0.15, min(5, speed))
+            delta = delta.normalize() * max(speed * 0.15, min(2, speed))
         self.rect.center += delta
