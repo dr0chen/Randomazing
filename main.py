@@ -35,7 +35,9 @@ while True:
             raise SystemExit
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
-                glob_var["player"].shoot_bullet(event.pos)
+                glob_var["player"].use_item(event.pos)
+            elif event.button == pygame.BUTTON_RIGHT:
+                glob_var["player"].switch_item()
     if glob_var["player"].score >= 50 and not glob_var["exitable"]:
         glob_var["grid"].set_exit()
         glob_var["exitable"] = True

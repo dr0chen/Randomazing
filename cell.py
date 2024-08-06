@@ -34,11 +34,12 @@ class Cell(Object):
         self.locked = False
     def lock(self):
         self.locked = True
+    def close_down(self):
+        pass
+    def open_up(self):
+        pass
     def player_enter(self, player):
         self.has_player = True
-        curr_time = pygame.time.get_ticks()
-        for enemy in self.enemies:
-            enemy.last_shoot_time = curr_time
         self.cm.add_dynamic(player)
         self.lock()
     def player_leave(self, player):
@@ -115,6 +116,18 @@ class SmallCell(Cell):
         neighbors = map(lambda x: self.neighbor_cells[x], 'udlr')
         neighbors = [neighbor for neighbor in neighbors if neighbor != (None, None)]
         return neighbors
+    def close_down(self):
+        for direction in 'udlr':
+            tunnel = self.neighbor_cells[direction][0]
+            if not tunnel:
+                continue
+            tunnel.close_down()
+    def open_up(self):
+        for direction in 'udlr':
+            tunnel = self.neighbor_cells[direction][0]
+            if not tunnel:
+                continue
+            tunnel.open_up()
     def is_mergable(self) -> bool:
         return not self.locked and not self.merge
     def make_layout(self):
@@ -143,6 +156,12 @@ class LargeCell(Cell):
         neighbors = sum([cell.get_neighbors() for cell in self.cells], [])
         neighbors = [(tunnel, neighbor) for tunnel, neighbor in neighbors if neighbor not in self.cells]
         return neighbors
+    def close_down(self):
+        for cell in self.cells:
+            cell.close_down()
+    def open_up(self):
+        for cell in self.cells:
+            cell.open_up()
     def make_layout(self):
         for cell, layout in zip(self.cells, self.layouts):
             make_layout_1(cell, self.pos, layout, self.cm)

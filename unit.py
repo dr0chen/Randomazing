@@ -49,10 +49,43 @@ class Player(Unit):
         self.safe_moves = SAFE_MOVES_TOTAL
         self.moves = 0
         self.score = 0
+        self.shooting_interval = 500
+        self.items = [['shooter', float('INF')]]
+        self.curr_item_idx = 0
+        self.last_shoot_time = pygame.time.get_ticks()
         self.location.player_enter(self)
+    def pickup_item(self, item_name, item_cnt):
+        for item in self.items:
+            if item[0] == item_name:
+                item[1] += item_cnt
+                break
+        else:
+            self.items.append([item_name, item_cnt])
+    def switch_item(self):
+        self.curr_item_idx = (self.curr_item_idx + 1) % len(self.items)
+    def use_item(self, mouse_pos):
+        curr_item = self.items[self.curr_item_idx]
+        match curr_item[0]:
+            case 'shooter':
+                self.shoot_bullet(mouse_pos)
+            case 'knife':
+                pass
+            case 'health_potion':
+                if self.health == self.max_health:
+                    return
+                self.health += self.health
+                self.health = min(self.health, self.max_health)
+            case 'key':
+                pass
+        curr_item[1] -= 1
+        if curr_item[1] <= 0:
+            self.items.pop(self.curr_item_idx)
+            self.curr_item_idx = min(self.curr_item_idx + 1, len(self.items) - 1)
     def shoot_bullet(self, mouse_pos):
-        if self.moving_state != 'free' or self.shield:
+        curr_time = pygame.time.get_ticks()
+        if self.moving_state != 'free' or self.shield or curr_time - self.last_shoot_time <= self.shooting_interval:
             return
+        self.last_shoot_time = curr_time
         src_pos = pygame.Vector2(self.rect.center)
         dest_pos = pygame.Vector2(glob_var["camera"].rect.topleft) + pygame.Vector2(mouse_pos) - pygame.Vector2(MAZE_SIZE * TILE_WIDTH, 0)
         vel = dest_pos - src_pos
@@ -107,8 +140,12 @@ class Enemy(Unit):
     def __init__(self, cell, pos: pygame.Vector2, speed, health, attack):
         super().__init__(cell, pos, speed, health, attack)
         self.state = 'idle'
-        self.last_shoot_time = pygame.time.get_ticks()
-        self.shoot_interval = 1000
+        self.timer = pygame.time.get_ticks()
+        self.idle_interval = 125
+        self.move_interval = 500
+        self.shoot_interval = 125
+        self.target = pygame.Vector2(0, 0)
+        self.vel_tmp = self.vel.copy()
         cell.enemies.add(self)
         cell.cm.add_dynamic(self)
     def shoot_bullet(self, target_pos: pygame.Vector2):

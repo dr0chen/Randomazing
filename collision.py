@@ -26,7 +26,7 @@ class TunnelStrategy(StopStrategy):
     def handle_collision(self, player, tunnel_entry):
         if tunnel_entry.tunnel.merge:
             return
-        if tunnel_entry.tunnel.opened:
+        if tunnel_entry.tunnel.opened and not tunnel_entry.tunnel.closed_down:
             if player.vel * tunnel_entry.direction > 0:
                 player.facing = [tunnel_entry.direction.x, tunnel_entry.direction.y]
                 player.vel = player.speed * pygame.Vector2(player.facing)
@@ -83,8 +83,9 @@ fs = FuncStrategy()
 
 def deploy_cm() -> CollisionManager:
     cm = CollisionManager()
-    cm.register_strategy(Player, Wall, ss)
+    cm.register_strategy(Unit, Wall, ss)
     cm.register_strategy(Player, TunnelEntry, ts)
+    cm.register_strategy(Enemy, TunnelEntry, ss)
     cm.register_strategy(Projectile, Wall, vs)
     cm.register_strategy(Projectile, TunnelEntry, vs)
     cm.register_strategy(DroppedItems, Wall, ss)

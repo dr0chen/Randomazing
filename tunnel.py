@@ -38,12 +38,16 @@ class Tunnel(Object):
         Tunnel.all_tunnels.add(self)
         self.merge = None
         self.opened = True
+        self.closed_down = False
         self.locked = False
-        # self.cm = CollisionManager() #placeholder
     def unlock(self):
         self.locked = False
     def lock(self):
         self.locked = True
+    def close_down(self):
+        self.closed_down = True
+    def open_up(self):
+        self.closed_down = False
     def set_state(self, opened: bool) -> bool:
         if self.locked:
             return False

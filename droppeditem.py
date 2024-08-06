@@ -43,8 +43,5 @@ class HealthPotion(DroppedItems):
         self.surface.fill("pink")
         surface.blit(self.surface, self.rect)
     def picked_up(self, player):
-        if player.health == player.max_health:
-            return
-        player.health += self.health
-        player.health = min(player.health, player.max_health)
+        player.pickup_item("health_potion", 1)
         self.kill()

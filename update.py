@@ -8,12 +8,39 @@ def update():
     player = glob_var["player"]
     grid = glob_var["grid"]
 
+    #if enemies in cell, close down
+    if len(current_cells[0].enemies) > 0:
+        current_cells[0].close_down()
+    #else, open up
+    else:
+        current_cells[0].open_up()
+    
     #enemies action
     curr_time = pygame.time.get_ticks()
     for enemy in current_cells[0].enemies:
-        if curr_time > enemy.last_shoot_time + enemy.shoot_interval:
-            enemy.shoot_bullet(pygame.Vector2(glob_var["player"].rect.center))
-            enemy.last_shoot_time = curr_time
+        match enemy.state:
+            case 'idle':
+                enemy.vel = pygame.Vector2(0, 0)
+                if curr_time > enemy.timer + enemy.idle_interval:
+                    enemy.state = 'move'
+                    enemy.timer = curr_time
+                    bias = pygame.Vector2(random.uniform(-100, 100), random.uniform(-100, 100))
+                    enemy.target = pygame.Vector2(player.rect.center) + (pygame.Vector2(enemy.rect.center) - pygame.Vector2(player.rect.center)).normalize() * 250 + bias
+                    delta = enemy.target - pygame.Vector2(enemy.rect.center)
+                    enemy.vel = delta.normalize() * min(enemy.speed, delta.length())
+            case 'move':
+                delta = enemy.target - pygame.Vector2(enemy.rect.center)
+                enemy.vel = delta.normalize() * min(enemy.speed, delta.length())
+                if curr_time > enemy.timer + enemy.move_interval or enemy.target == pygame.Vector2(enemy.rect.center):
+                    enemy.state = 'shoot'
+                    enemy.timer = curr_time
+                    enemy.vel = pygame.Vector2(0, 0)
+            case 'shoot':
+                enemy.vel = pygame.Vector2(0, 0)
+                if curr_time > enemy.timer + enemy.shoot_interval:
+                    enemy.shoot_bullet(pygame.Vector2(glob_var["player"].rect.center))
+                    enemy.timer = curr_time
+                    enemy.state = 'idle'
 
     #player get acc and calc vel
     player.acc = pygame.Vector2(0, 0)
@@ -88,6 +115,11 @@ def update():
         vel_tmp = player.vel.copy()
         player.rect.left += player.vel.x
         player.vel.y = 0
+        #enemies
+        for enemy in current_cells[0].enemies:
+            enemy.vel_tmp = enemy.vel.copy()
+            enemy.rect.left += enemy.vel.x
+            enemy.vel.y = 0
         #projectiles
         for projectile in Projectile.all_projectiles:
             projectile.rect.left += projectile.vel.x
@@ -100,6 +132,8 @@ def update():
         cm.check_collisions()
         #vel recover
         player.vel.y = vel_tmp.y
+        for enemy in current_cells[0].enemies:
+            enemy.vel.y = enemy.vel_tmp.y
         for item in DroppedItems.all_items:
             item.vel.y = item.vel_tmp.y
 
@@ -107,6 +141,10 @@ def update():
         #player
         player.rect.top += player.vel.y
         player.vel.x = 0
+        #enemies
+        for enemy in current_cells[0].enemies:
+            enemy.rect.top += enemy.vel.y
+            enemy.vel.x = 0
         #projectiles
         for projectile in Projectile.all_projectiles:
             projectile.rect.top += projectile.vel.y
@@ -118,6 +156,8 @@ def update():
         cm.check_collisions()
         #vel recover
         player.vel.x = vel_tmp.x
+        for enemy in current_cells[0].enemies:
+            enemy.vel.x = enemy.vel_tmp.x
         for item in DroppedItems.all_items:
             item.vel.x = item.vel_tmp.x
     
@@ -135,3 +175,4 @@ def update():
     #current_cells update
     if player.moving_state == 'free' and len(current_cells) > 1:
         current_cells.pop(0)
+    

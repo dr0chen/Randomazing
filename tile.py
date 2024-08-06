@@ -51,7 +51,7 @@ class TunnelEntry(Tile):
     def render(self, surface):
         if self.tunnel.merge is not None:
             return
-        if self.tunnel.opened:
+        if self.tunnel.opened and not self.tunnel.closed_down:
             self.rect.topleft = self.poses[0]
             self.surface.fill("black")
         else:
