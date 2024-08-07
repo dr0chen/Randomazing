@@ -1,5 +1,9 @@
 to-do list:
 -完整的游戏流程
--
--更多敌人
--更多格子类型
+-KeyGuard
+-Turret
+-Elite
+-'1'
+-'2'
+-'L'
+-'4'
