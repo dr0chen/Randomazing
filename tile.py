@@ -60,7 +60,10 @@ class TunnelEntry(Tile):
             self.surface.fill("black")
         else:
             self.rect.topleft = self.poses[1]
-            self.surface.fill("grey")
+            if self.tunnel.breakable:
+                self.surface.fill("bisque")
+            else:
+                self.surface.fill("grey")
         surface.blit(self.surface, self.rect)
 
 class Chest(Tile):
@@ -71,14 +74,16 @@ class Chest(Tile):
         self.cell = cell
         self.opened = False
         self.func = self.opening
-    def opening(self, _):
+    def opening(self):
+        if self.opened:
+            return
         items = random.choice(self.loot_table)
         for item in items:
             vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
             if type(item) is tuple:
                 item[0](self.cell, pygame.Vector2(self.rect.center), vel, item[1])
             else:
-                item(self.cell, pygame.Vector2(self.rect.center), vel)
+                item(self.cell, pygame.Vector2(self.rect.center) - self.cell.pos, vel)
         self.opened = True
     def render(self, surface):
         if self.opened:

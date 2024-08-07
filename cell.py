@@ -41,10 +41,12 @@ class Cell(Object):
     def player_enter(self, player):
         self.has_player = True
         self.cm.add_dynamic(player)
+        self.cm.add_dynamic(player.closearea)
         self.lock()
     def player_leave(self, player):
         self.has_player = False
         self.cm.remove(player)
+        self.cm.remove(player.closearea)
         if self.content != 'e':
             self.unlock()
     def make_layout(self):
@@ -56,18 +58,16 @@ class Cell(Object):
     def make_content(self):
         for obj in self.content:
             match obj[0]:
-                case 'enemy':
+                case 'normalenemy':
                     pos = obj[1]
-                    health = obj[2]
-                    attack = obj[3]
-                    Enemy(self, pos, 7, health, attack)
+                    NormalEnemy(self, pos)
                 case 'healthpotion':
                     pos = obj[1]
                     HealthPotion(self, pos, pygame.Vector2(0, 0))
                 case 'chest':
                     pos = obj[1]
-                    items = obj[2]
-                    Chest(self, pos, items)
+                    loot_table = obj[2]
+                    Chest(self, pos, loot_table)
     def clear_content(self):
         for obj in self.cm.dynamic_objects:
             if type(obj) is not Player:
@@ -122,6 +122,18 @@ class SmallCell(Cell):
         neighbors = map(lambda x: self.get_neighbor(x), 'udlr')
         neighbors = [neighbor for neighbor in neighbors if neighbor != (None, None)]
         return neighbors
+    def lock_tunnels(self):
+        for tunnel, _ in self.get_neighbors():
+            tunnel.lock()
+    def unlock_tunnels(self):
+        for tunnel, _ in self.get_neighbors():
+            tunnel.unlock()
+    def set_breakable(self):
+        for tunnel, _ in self.get_neighbors():
+            tunnel.breakable = True
+    def unset_breakable(self):
+        for tunnel, _ in self.get_neighbors():
+            tunnel.breakable = False
     def close_down(self):
         for direction in 'udlr':
             tunnel = self.neighbor_cells[direction][0]

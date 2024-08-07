@@ -1,5 +1,4 @@
 import pygame
-import random
 from utils import *
 from cell import *
 from grid import *
@@ -37,8 +36,9 @@ def poll_event():
         if glob_var["dead"] or glob_var["time_up"] or glob_var["exited"]:
             continue
         if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.Vector2(glob_var["camera"].rect.topleft) + pygame.Vector2(event.pos) - pygame.Vector2(MAZE_SIZE * TILE_WIDTH, 0)
             if event.button == pygame.BUTTON_LEFT:
-                glob_var["player"].use_item(event.pos)
+                glob_var["player"].use_item(mouse_pos)
             elif event.button == pygame.BUTTON_RIGHT:
                 glob_var["player"].switch_item()
 
@@ -61,7 +61,7 @@ def update():
         glob_var["exitable"] = True
 
     #if enemies in cell, close down
-    if len(current_cells[0].enemies) > 0:
+    if len([enemy for enemy in current_cells[0].enemies if not isinstance(enemy, Turret)]) > 0:
         current_cells[0].close_down()
     #else, open up
     else:
@@ -118,10 +118,14 @@ def update():
         for item in DroppedItems.all_items:
             item.vel.y = item.vel_tmp.y
 
+        #deactivate closearea
+        player.closearea.deactivate(0, 16)
+
         #then move along y
         #player
         player.rect.top += player.vel.y
         player.vel.x = 0
+        player.closearea.move(player.rect.center)
         #enemies
         for enemy in current_cells[0].enemies:
             enemy.rect.top += enemy.vel.y
@@ -175,14 +179,14 @@ def render():
     screen.fill("black")
     scene.fill("black")
     grid.render_minimap(screen)
+    infotab.render(screen)
     for cell in current_cells:
         cell.render_layout(scene)
         cell.render_content(scene)
     for projectile in Projectile.all_projectiles:
         projectile.render(scene)
     player.render(scene)
-    screen.blit(scene, (MAZE_SIZE * TILE_WIDTH, 0), glob_var["camera"].rect)
-    infotab.render(screen)
+    screen.blit(scene, (MAZE_SIZE * TILE_WIDTH, 0), camera.rect)
 
     #flip!
     pygame.display.flip()

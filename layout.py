@@ -5,10 +5,11 @@ from unit import *
 contents = {
     '1': [
         [],
-        [('enemy', pygame.Vector2(300, 300), 20, 5), 
-         ('enemy', pygame.Vector2(500, 300), 20, 5)],
+        [('normalenemy', pygame.Vector2(300, 300)), 
+         ('normalenemy', pygame.Vector2(500, 300))],
+        [('normalenemy', pygame.Vector2(400, 300))],
         [('healthpotion', pygame.Vector2(400, 300))],
-        [('chest', pygame.Vector2(400, 300), [[HealthPotion]])]
+        [('chest', pygame.Vector2(400, 300), [[HealthPotion], [(ScorePoint, None)], [(ScorePoint, None), (ScorePoint, None)]])]
     ],
     'h2': [
         []
@@ -34,7 +35,7 @@ contents = {
 }
 
 content_weights = {
-    '1': [1, 3, 1, 0.5],
+    '1': [1, 2, 2, 2, 2],
     'h2': [1],
     'v2': [1],
     'ulL': [1],

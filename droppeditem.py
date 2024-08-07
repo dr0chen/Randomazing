@@ -76,4 +76,5 @@ class Shooter(DroppedItems):
         surface.blit(self.surface, self.rect)
     def picked_up(self, player):
         player.pickup_item("Shooter", 1)
+        glob_var["has_shooter"] = True
         self.kill()    

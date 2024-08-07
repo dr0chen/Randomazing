@@ -40,6 +40,7 @@ class Tunnel(Object):
         self.opened = True
         self.closed_down = False
         self.locked = False
+        self.breakable = False
     def unlock(self):
         self.locked = False
     def lock(self):

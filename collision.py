@@ -4,6 +4,7 @@ from unit import *
 from tile import *
 from projectile import *
 from droppeditem import *
+from closearea import *
 
 class CollisionStrategy:
     def handle_collision(self, obj1, obj2):
@@ -22,6 +23,11 @@ class StopStrategy(CollisionStrategy):
                 obj1.rect.top = obj2.rect.bottom
             obj1.vel.x = 0
             obj1.vel.y = 0
+
+class ChestStrategy(StopStrategy):
+    def handle_collision(self, obj, chest):
+        if not chest.opened and colliderect(obj.rect, chest.rect):
+            super().handle_collision(obj, chest)
 
 class TunnelStrategy(StopStrategy):
     def handle_collision(self, player, tunnel_entry):
@@ -45,6 +51,24 @@ class VanishStrategy(CollisionStrategy):
     def handle_collision(self, obj1, obj2):
         if colliderect(obj1.rect, obj2.rect):
             obj1.kill()
+
+class BreakStrategy(VanishStrategy):
+    def handle_collision(self, obj, tunnel_entry):
+        if colliderect(obj.rect, tunnel_entry.rect):
+            if tunnel_entry.tunnel.breakable and not tunnel_entry.tunnel.opened and not tunnel_entry.tunnel.closed_down:
+                tunnel_entry.tunnel.opened = True
+            super().handle_collision(obj, tunnel_entry)
+
+class CloseAreaBreakStrategy(CollisionStrategy):
+    def handle_collision(self, closearea, tunnel_entry):
+        if closearea.collidewithrect(tunnel_entry.rect):
+            if tunnel_entry.tunnel.breakable and not tunnel_entry.tunnel.opened and not tunnel_entry.tunnel.closed_down:
+                tunnel_entry.tunnel.opened = True
+
+class CloseAreaStrategy(CollisionStrategy):
+    def handle_collision(self, closearea, obj):
+        if closearea.collidewithrect(obj.rect):
+            closearea.func(obj)
 
 class FuncStrategy(CollisionStrategy):
     def handle_collision(self, obj1, obj2):
@@ -83,18 +107,25 @@ class CollisionManager:
 ss = StopStrategy()
 ts = TunnelStrategy()
 vs = VanishStrategy()
+bs = BreakStrategy()
 fs = FuncStrategy()
+cs = ChestStrategy()
+cas = CloseAreaStrategy()
+cabs = CloseAreaBreakStrategy()
 
 def deploy_cm() -> CollisionManager:
     cm = CollisionManager()
     cm.register_strategy(Unit, Wall, ss)
-    cm.register_strategy(Unit, Chest, ss)
+    cm.register_strategy(Unit, Chest, cs)
     cm.register_strategy(Player, TunnelEntry, ts)
     cm.register_strategy(Enemy, TunnelEntry, ss)
     cm.register_strategy(Projectile, Wall, vs)
-    cm.register_strategy(Projectile, TunnelEntry, vs)
+    cm.register_strategy(Projectile, TunnelEntry, bs)
     cm.register_strategy(DroppedItems, Wall, ss)
     cm.register_strategy(DroppedItems, TunnelEntry, ss)
     cm.register_strategy(DroppedItems, Player, fs)
     cm.register_strategy(Projectile, Unit, fs)
+    cm.register_strategy(CloseArea, Chest, cas)
+    cm.register_strategy(CloseArea, Enemy, cas)
+    cm.register_strategy(CloseArea, TunnelEntry, cabs)
     return cm

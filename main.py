@@ -1,4 +1,4 @@
-from update import *
+from game import *
 
 init()
 

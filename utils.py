@@ -48,6 +48,7 @@ glob_var = {
     "exited": False,
     "dead": False,
     "time_up": False,
+    "has_shooter": False,
     "grid": None,
     "player": None,
     "scene": None,
@@ -60,6 +61,52 @@ glob_var = {
     "timelimit_1": 1200,
     "timelimit_2": 120
 }
+
+def collidesegment(p1: pygame.Vector2, p2: pygame.Vector2, ps1: pygame.Vector2, ps2: pygame.Vector2, direction: str):
+    match direction:
+        case 'h':
+            if not (min(p1.y, p2.y) <= ps1.y <= max(p1.y, p2.y)):
+                return False
+            if p2.y == p1.y:
+                if max(p1.x, p2.x) < min(ps1.x, ps2.x) or max(ps1.x, ps2.x) < min(p1.x, p2.x):
+                    return False
+                else:
+                    return True
+            t = (ps1.y - p1.y) / (p2.y - p1.y)
+            if not (0 <= t <= 1):
+                return False
+            x = p1.x + t * (p2.x - p1.x)
+            if min(ps1.x, ps2.x) <= x <= max(ps1.x, ps2.x):
+                return True
+        case 'v':
+            if not (min(p1.x, p2.x) <= ps1.x <= max(p1.x, p2.x)):
+                return False
+            if p2.x == p1.x:
+                if max(p1.y, p2.y) < min(ps1.y, ps2.y) or max(ps1.y, ps2.y) < min(p1.y, p2.y):
+                    return False
+                else:
+                    return True
+            t = (ps1.x - p1.x) / (p2.x - p1.x)
+            if not (0 <= t <= 1):
+                return False
+            y = p1.y + t * (p2.y - p1.y)
+            if min(ps1.y, ps2.y) <= y <= max(ps1.y, ps2.y):
+                return True
+        case _:
+            assert(0)
+    
+    return False
+
+def collidesegmentrect(start: pygame.Vector2, end: pygame.Vector2, r: pygame.Rect):
+    if collidesegment(start, end, pygame.Vector2(r.topleft), pygame.Vector2(r.topright), 'h'):
+        return True
+    if collidesegment(start, end, pygame.Vector2(r.bottomleft), pygame.Vector2(r.bottomright), 'h'):
+        return True
+    if collidesegment(start, end, pygame.Vector2(r.topright), pygame.Vector2(r.bottomright), 'v'):
+        return True
+    if collidesegment(start, end, pygame.Vector2(r.topleft), pygame.Vector2(r.bottomleft), 'v'):
+        return True
+    return False
 
 def colliderect(r1: pygame.Rect, r2: pygame.Rect):
     if r1.right <= r2.left or r2.right <= r1.left or r1.top >= r2.bottom or r2.top >= r1.bottom:
