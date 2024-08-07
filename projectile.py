@@ -18,6 +18,6 @@ class Projectile(pygame.sprite.Sprite):
     def render(self, surface: pygame.Surface):
         surface.blit(self.surface, self.rect)
     def hit(self, unit):
-        if type(self.owner) != type(unit):
+        if type(self.owner).__bases__[0] != type(unit).__bases__[0]:
             unit.take_damage(self.damage)
             self.kill()

@@ -8,8 +8,10 @@ contents = {
         [('normalenemy', pygame.Vector2(300, 300)), 
          ('normalenemy', pygame.Vector2(500, 300))],
         [('normalenemy', pygame.Vector2(400, 300))],
+        [('keyguard', pygame.Vector2(400, 300))],
+        [('turret', pygame.Vector2(400, 300), True)],
         [('healthpotion', pygame.Vector2(400, 300))],
-        [('chest', pygame.Vector2(400, 300), [[HealthPotion], [(ScorePoint, None)], [(ScorePoint, None), (ScorePoint, None)]])]
+        [('chest', pygame.Vector2(400, 300), [[HealthPotion, (ScorePoint, None)], [HealthPotion, (ScorePoint, None), (ScorePoint, None)]])]
     ],
     'h2': [
         []
@@ -35,7 +37,7 @@ contents = {
 }
 
 content_weights = {
-    '1': [1, 2, 2, 2, 2],
+    '1': [1, 0.5, 1.5, 1, 3, 1.5, 1],
     'h2': [1],
     'v2': [1],
     'ulL': [1],

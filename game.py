@@ -40,13 +40,20 @@ def poll_event():
             if event.button == pygame.BUTTON_LEFT:
                 glob_var["player"].use_item(mouse_pos)
             elif event.button == pygame.BUTTON_RIGHT:
-                glob_var["player"].switch_item()
+                glob_var["player"].shield = 3
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == pygame.BUTTON_RIGHT:
+                glob_var["player"].shield = 0
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_q:
+                glob_var["player"].switch_item('l')
+            elif event.key == pygame.K_e:
+                glob_var["player"].switch_item('r')
 
 def update():
     player = glob_var["player"]
     grid = glob_var["grid"]
     camera = glob_var["camera"]
-    grid = glob_var["grid"]
 
     #global status check
     if glob_var["timer"] // 1000 >= glob_var["timelimit_1"] and not glob_var["exitable"]:
@@ -59,9 +66,10 @@ def update():
     if player.batteries >= 10 and not glob_var["exitable"]:
         grid.set_exit()
         glob_var["exitable"] = True
+        glob_var["timer"] = 0
 
     #if enemies in cell, close down
-    if len([enemy for enemy in current_cells[0].enemies if not isinstance(enemy, Turret)]) > 0:
+    if len([enemy for enemy in current_cells[-1].enemies if not isinstance(enemy, Turret)]) > 0:
         current_cells[0].close_down()
     #else, open up
     else:

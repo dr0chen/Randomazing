@@ -47,7 +47,7 @@ class Cell(Object):
         self.has_player = False
         self.cm.remove(player)
         self.cm.remove(player.closearea)
-        if self.content != 'e':
+        if self is not glob_var["grid"].exit_cell:
             self.unlock()
     def make_layout(self):
         pass
@@ -56,11 +56,20 @@ class Cell(Object):
     def render_layout(self, surface: pygame.Surface):
         pass
     def make_content(self):
+        if self.locked:
+            return
         for obj in self.content:
             match obj[0]:
                 case 'normalenemy':
                     pos = obj[1]
                     NormalEnemy(self, pos)
+                case 'keyguard':
+                    pos = obj[1]
+                    KeyGuard(self, pos)
+                case 'turret':
+                    pos = obj[1]
+                    countercw = obj[2],
+                    Turret(self, pos, countercw)
                 case 'healthpotion':
                     pos = obj[1]
                     HealthPotion(self, pos, pygame.Vector2(0, 0))
@@ -68,7 +77,12 @@ class Cell(Object):
                     pos = obj[1]
                     loot_table = obj[2]
                     Chest(self, pos, loot_table)
+                case 'exit':
+                    pos = obj[1]
+                    Exit(self, pos)
     def clear_content(self):
+        if self.locked:
+            return
         for obj in self.cm.dynamic_objects:
             if type(obj) is not Player:
                 obj.kill()
@@ -191,6 +205,8 @@ class LargeCell(Cell):
         for tile in sum([list(cell.tiles) for cell in self.cells], []):
             tile.render(surface)
     def unmerge(self):
+        if self.locked:
+            return
         self.clear_layout()
         for cell in self.cells:
             cell.merge = None

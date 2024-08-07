@@ -18,8 +18,6 @@ class Tile(pygame.sprite.Sprite):
                 cm.add_dynamic(self)
     def render(self, surface):
         surface.blit(self.surface, self.rect)
-    def handle_collision(self, player) -> bool:
-        pass
 
 class Wall(Tile):
     all_walls = pygame.sprite.Group()
@@ -27,20 +25,6 @@ class Wall(Tile):
         super().__init__(pos, cm, 'static')
         self.surface.fill("white")
         Wall.all_walls.add(self)
-    def handle_collision(self, player) -> bool:
-        if colliderect(player.rect, self.rect):
-            if player.vel.x > 0:
-                player.rect.left = self.rect.left - 50
-            if player.vel.x < 0:
-                player.rect.left = self.rect.right
-            if player.vel.y > 0:
-                player.rect.top = self.rect.top - 50
-            if player.vel.y < 0:
-                player.rect.top = self.rect.bottom
-            player.vel.x = 0
-            player.vel.y = 0
-            return True
-        return False
 
 class TunnelEntry(Tile):
     def __init__(self, pos: pygame.Vector2, tunnel, direction: pygame.Vector2, cm):
@@ -73,21 +57,18 @@ class Chest(Tile):
         self.loot_table = loot_table
         self.cell = cell
         self.opened = False
-        self.func = self.opening
-    def opening(self):
-        if self.opened:
-            return
-        items = random.choice(self.loot_table)
-        for item in items:
-            vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
-            if type(item) is tuple:
-                item[0](self.cell, pygame.Vector2(self.rect.center), vel, item[1])
-            else:
-                item(self.cell, pygame.Vector2(self.rect.center) - self.cell.pos, vel)
-        self.opened = True
     def render(self, surface):
         if self.opened:
             self.surface.fill("darkgoldenrod")
         else:
             self.surface.fill("darkgoldenrod1")
         surface.blit(self.surface, self.rect)
+
+class Exit(Tile):
+    def __init__(self, cell, pos: pygame.Vector2):
+        super().__init__(pygame.Vector2(0, 0), cell.cm, 'dynamic')
+        self.surface.fill("lime")
+        self.rect.center = cell.pos + pos
+        self.func = self.exit
+    def exit(self, player):
+        glob_var["exited"] = True

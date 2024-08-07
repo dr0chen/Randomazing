@@ -22,7 +22,7 @@ class Infotab(pygame.sprite.Sprite):
         elif glob_var["exited"]:
             texts.append(self.font.render(f'Exited', True, "green"))
         elif glob_var["exitable"]:
-            texts.append(self.font.render(f'Exit unlocked', True, "red"))
+            texts.append(self.font.render(f'Exit appeared', True, "red"))
         else:
             texts.append(self.font.render(f'Batteries:{self.player.batteries}/10', True, "blue"))
         texts.append(self.font.render(f'Health:{self.player.health}/{self.player.max_health}', True, "white"))

@@ -128,4 +128,5 @@ def deploy_cm() -> CollisionManager:
     cm.register_strategy(CloseArea, Chest, cas)
     cm.register_strategy(CloseArea, Enemy, cas)
     cm.register_strategy(CloseArea, TunnelEntry, cabs)
+    cm.register_strategy(Exit, Player, fs)
     return cm
