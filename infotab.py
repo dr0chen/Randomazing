@@ -29,9 +29,9 @@ class Infotab(pygame.sprite.Sprite):
         texts.append(self.font.render(f'Current Item:', True, "white"))
         texts.append(self.font.render(f'{self.player.items[self.player.curr_item_idx][0]} x {self.player.items[self.player.curr_item_idx][1]}', True, "white"))
         if glob_var["exitable"]:
-            remaining_seconds = glob_var["timelimit_2"] - glob_var["timer"] // 1000
+            remaining_seconds = glob_var["timelimit_2"] - (glob_var["timer"] - glob_var["timer_start"]) // 1000
         else:
-            remaining_seconds = glob_var["timelimit_1"] - glob_var["timer"] // 1000
+            remaining_seconds = glob_var["timelimit_1"] - (glob_var["timer"] - glob_var["timer_start"]) // 1000
         if remaining_seconds < 60:
             color = "red"
         else:

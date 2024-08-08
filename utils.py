@@ -57,6 +57,7 @@ glob_var = {
     "screen": None,
     "infotab": None,
     "clock": None,
+    "timer_start": None,
     "timer": None,
     "timelimit_1": 1200,
     "timelimit_2": 120

@@ -14,6 +14,7 @@ def init():
     glob_var["screen"] = pygame.display.set_mode((WIDTH, HEIGHT))
     glob_var["clock"] = pygame.time.Clock()
     glob_var["timer"] = pygame.time.get_ticks()
+    glob_var["timer_start"] = glob_var["timer"]
 
     glob_var["grid"] = Grid(MAZE_SIZE, MAZE_SIZE)
     current_cells.append(glob_var["grid"].cells[MAZE_SIZE // 2][MAZE_SIZE // 2])
@@ -56,9 +57,9 @@ def update():
     camera = glob_var["camera"]
 
     #global status check
-    if glob_var["timer"] // 1000 >= glob_var["timelimit_1"] and not glob_var["exitable"]:
+    if (glob_var["timer"] - glob_var["timer_start"]) // 1000 >= glob_var["timelimit_1"] and not glob_var["exitable"]:
         glob_var["time_up"] = True
-    elif glob_var["timer"] // 1000 >= glob_var["timelimit_2"] and glob_var["exitable"]:
+    elif (glob_var["timer"] - glob_var["timer_start"]) // 1000 >= glob_var["timelimit_2"] and glob_var["exitable"]:
         glob_var["time_up"] = True
     
     if glob_var["dead"] or glob_var["time_up"] or glob_var["exited"]:
@@ -66,7 +67,7 @@ def update():
     if player.batteries >= 10 and not glob_var["exitable"]:
         grid.set_exit()
         glob_var["exitable"] = True
-        glob_var["timer"] = 0
+        glob_var["timer_start"] = pygame.time.get_ticks()
 
     #if enemies in cell, close down
     if len([enemy for enemy in current_cells[-1].enemies if not isinstance(enemy, Turret)]) > 0:

@@ -54,7 +54,7 @@ class Player(Unit):
         self.safe_moves = SAFE_MOVES_TOTAL
         self.moves = 0
         self.score = 0
-        self.batteries = 0
+        self.batteries = 9
         self.attack_interval = 500
         self.items = [['Knife', float('INF')]]
         self.curr_item_idx = -1
@@ -171,7 +171,7 @@ class Player(Unit):
         if self.shield > 0:
             self.shield -= 1
             return
-        # self.health -= damage
+        self.health -= damage
         if self.health <= 0:
             self.health = 0
             self.dead()
@@ -367,7 +367,7 @@ class KeyGuard(Enemy):
                         self.timer = curr_time
                 else:
                     if curr_time > self.timer + self.shoot_interval2:
-                        self.shoot_bullet(self.target, 10)
+                        self.shoot_bullet(self.target, 9)
                         dist = (self.target - pygame.Vector2(self.rect.center)).length()
                         ortho = pygame.Vector2(self.target.y - self.rect.center[1], self.rect.center[0] - self.target.x).normalize() * dist * 0.87
                         self.shoot_bullet(self.target + ortho, 7)
@@ -391,7 +391,7 @@ class KeyGuard(Enemy):
 class Turret(Enemy):
     def __init__(self, cell, pos: pygame.Vector2, countercw: bool):
         super().__init__(cell, pos, 0, 50, 5)
-        self.offset = 0
+        self.offset = 8
         self.countercw = countercw
         self.shoot_interval = 25
         self.shoot_cnt = 0
