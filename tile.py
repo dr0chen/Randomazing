@@ -44,7 +44,7 @@ class TunnelEntry(Tile):
             self.surface.fill("black")
         else:
             self.rect.topleft = self.poses[1]
-            if self.tunnel.breakable:
+            if self.tunnel.breakable and not self.tunnel.closed_down:
                 self.surface.fill("bisque")
             else:
                 self.surface.fill("grey")

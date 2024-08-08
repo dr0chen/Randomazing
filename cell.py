@@ -62,7 +62,11 @@ class Cell(Object):
             match obj[0]:
                 case 'normalenemy':
                     pos = obj[1]
-                    NormalEnemy(self, pos)
+                    batteries = glob_var["player"].batteries
+                    if batteries >= 5 and random.randint(1, 100) <= (batteries - 4) * 10 + 20:
+                        Elite(self, pos)
+                    else:
+                        NormalEnemy(self, pos)
                 case 'keyguard':
                     pos = obj[1]
                     KeyGuard(self, pos)

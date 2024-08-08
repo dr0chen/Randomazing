@@ -265,7 +265,11 @@ class Enemy(Unit):
         cell.cm.add_dynamic(self)
     def shoot_bullet(self, target_pos: pygame.Vector2, bullet_speed):
         src_pos = pygame.Vector2(self.rect.center)
-        vel = (target_pos - src_pos).normalize() * bullet_speed
+        delta = target_pos - src_pos
+        if delta.length() == 0:
+            vel = pygame.Vector2(random.uniform(-1, 1), random.uniform(-1, 1)).normalize() * bullet_speed
+        else:
+            vel = (target_pos - src_pos).normalize() * bullet_speed
         Projectile(self, random.randint(self.attack, self.attack+2), self.rect.center, vel, current_cells[0].cm)
     def render(self, surface):
         super().render(surface)
@@ -428,11 +432,12 @@ class Turret(Enemy):
 
 class Elite(Enemy):
     def __init__(self, cell, pos: pygame.Vector2):
-        super().__init__(cell, pos, 10, 30, 10)
+        super().__init__(cell, pos, 8, 50, 10)
         self.state = 'idle'
-        self.idle_interval = random.randint(250, 350)
-        self.move_interval = random.randint(400, 600)
-        self.shoot_interval = 200
+        self.idle_interval = random.randint(100, 300)
+        self.move_interval = random.randint(200, 600)
+        self.shoot_interval = 100
+        self.shoot_cnt = 0
     def render(self, surface):
         self.surface.fill("crimson")
         surface.blit(self.surface, self.rect)
@@ -446,7 +451,7 @@ class Elite(Enemy):
                 if curr_time > self.timer + self.idle_interval:
                     self.state = 'move'
                     self.timer = curr_time
-                    self.move_interval = random.randint(400, 600)
+                    self.move_interval = random.randint(200, 600)
                     bias = pygame.Vector2(random.uniform(-100, 100), random.uniform(-100, 100))
                     self.target = pygame.Vector2(player.rect.center) + (pygame.Vector2(self.rect.center) - pygame.Vector2(player.rect.center)).normalize() * 250 + bias
                     delta = self.target - pygame.Vector2(self.rect.center)
@@ -460,11 +465,30 @@ class Elite(Enemy):
                     self.vel = pygame.Vector2(0, 0)
             case 'shoot':
                 self.vel = pygame.Vector2(0, 0)
-                if curr_time > self.timer + self.shoot_interval:
-                    self.shoot_bullet(pygame.Vector2(player.rect.center), 7)
+                if self.shoot_cnt == 0:
+                    if curr_time > self.timer + self.shoot_interval:
+                        self.target = pygame.Vector2(player.rect.center)
+                        self.shoot_bullet(self.target + pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10)), 10)
+                        dist = (self.target - pygame.Vector2(self.rect.center)).length()
+                        ortho = pygame.Vector2(self.target.y - self.rect.center[1], self.rect.center[0] - self.target.x).normalize() * dist * 0.6
+                        self.shoot_bullet(self.target + ortho + pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10)), 9)
+                        self.shoot_bullet(self.target - ortho + pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10)), 9)
+                        self.shoot_cnt += 1
+                        self.timer = curr_time
+                else:
+                    if curr_time > self.timer + self.shoot_interval:
+                        self.shoot_bullet(self.target + pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10)), 10)
+                        dist = (self.target - pygame.Vector2(self.rect.center)).length()
+                        ortho = pygame.Vector2(self.target.y - self.rect.center[1], self.rect.center[0] - self.target.x).normalize() * dist * 0.6
+                        self.shoot_bullet(self.target + ortho + pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10)), 9)
+                        self.shoot_bullet(self.target - ortho + pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10)), 9)
+                        self.shoot_cnt += 1
+                        self.timer = curr_time
+                if self.shoot_cnt >= 2:
+                    self.shoot_cnt = 0
                     self.timer = curr_time
                     self.state = 'idle'
-                    self.idle_interval = random.randint(250, 350)
+                    self.idle_interval = random.randint(100, 300)
     def dead(self):
         for _ in range(random.randint(1, 2)):
             vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
@@ -473,6 +497,9 @@ class Elite(Enemy):
             vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
             ScorePoint(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel, None)
         for _ in range(random.randint(0, 2)):
+            vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
+            HealthPotion(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel)
+        for _ in range(random.randint(1, 2)):
             vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
             HealthPotion(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel)
         self.kill()
