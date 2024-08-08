@@ -54,7 +54,7 @@ class Player(Unit):
         self.safe_moves = SAFE_MOVES_TOTAL
         self.moves = 0
         self.score = 0
-        self.batteries = 9
+        self.batteries = 0
         self.attack_interval = 500
         self.items = [['Knife', float('INF')]]
         self.curr_item_idx = -1
