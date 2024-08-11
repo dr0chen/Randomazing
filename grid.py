@@ -184,7 +184,7 @@ class Grid(pygame.sprite.Sprite):
             self.battery_cell.unlock()
             self.battery_cell.unlock_tunnels()
             self.battery_cell.set_breakable()
-            self.battery_cell.set_content([('chest', pygame.Vector2(400, 300), [[Battery]])])
+            self.battery_cell.set_content([('chest', (8, 6), [[Battery]])])
             self.battery_cell.make_content()
         ## set battery cell end ##
         ## set shooter cell ##
@@ -192,14 +192,14 @@ class Grid(pygame.sprite.Sprite):
             self.shooter_cell.unlock()
             self.shooter_cell.unlock_tunnels()
             self.shooter_cell.set_breakable()
-            self.shooter_cell.set_content([('chest', pygame.Vector2(400, 300), [[Shooter]])])
+            self.shooter_cell.set_content([('chest', (8, 6), [[Shooter]])])
             self.shooter_cell.make_content()
         ## set shooter cell end ##
         self.should_randomize = False
     def set_exit(self):
         candidates = [cell for cell in SmallCell.all_small_cells if abs(cell.row - current_cells[0].row) + abs(cell.col - current_cells[0].col) > MAZE_SIZE / 2 and cell.is_mergable()]
         self.exit_cell = random.choice(candidates)
-        self.exit_cell.set_content([('exit', pygame.Vector2(400, 300))])
+        self.exit_cell.set_content([('exit', (8, 6))])
         self.exit_cell.clear_content()
         self.exit_cell.make_content()
         self.exit_cell.lock()

@@ -57,31 +57,33 @@ class Cell(pygame.sprite.Sprite):
     def make_content(self):
         if self.locked:
             return
+        elite_cnt = 0
         for obj in self.content:
             match obj[0]:
                 case 'normalenemy':
-                    pos = obj[1]
+                    pos = pygame.Vector2(obj[1][0] * TILE_WIDTH, obj[1][1] * TILE_HEIGHT)
                     batteries = glob_var["player"].batteries
-                    if batteries >= 5 and random.randint(1, 100) <= (batteries - 4) * 10 + 20:
+                    if batteries >= 5 and elite_cnt <= 1 and random.randint(1, 100) <= (batteries - 5) * 5 + 20:
                         Elite(self, pos)
+                        elite_cnt += 1
                     else:
                         NormalEnemy(self, pos)
                 case 'keyguard':
-                    pos = obj[1]
+                    pos = pygame.Vector2(obj[1][0] * TILE_WIDTH, obj[1][1] * TILE_HEIGHT)
                     KeyGuard(self, pos)
                 case 'turret':
-                    pos = obj[1]
-                    countercw = obj[2],
+                    pos = pygame.Vector2(obj[1][0] * TILE_WIDTH, obj[1][1] * TILE_HEIGHT)
+                    countercw = obj[2]
                     Turret(self, pos, countercw)
                 case 'healthpotion':
-                    pos = obj[1]
+                    pos = pygame.Vector2(obj[1][0] * TILE_WIDTH, obj[1][1] * TILE_HEIGHT)
                     HealthPotion(self, pos, pygame.Vector2(0, 0))
                 case 'chest':
-                    pos = obj[1]
+                    pos = pygame.Vector2(obj[1][0] * TILE_WIDTH, obj[1][1] * TILE_HEIGHT)
                     loot_table = obj[2]
                     Chest(self, pos, loot_table)
                 case 'exit':
-                    pos = obj[1]
+                    pos = pygame.Vector2(obj[1][0] * TILE_WIDTH, obj[1][1] * TILE_HEIGHT)
                     Exit(self, pos)
     def clear_content(self):
         if self.locked:
@@ -98,7 +100,7 @@ class Cell(pygame.sprite.Sprite):
         if self.locked:
             return False
         candidates = contents[self.shape]
-        weights = content_weights[self.shape]
+        weights = content_weights[self.shape[-1]]
         self.set_content(random.choices(candidates, weights=weights)[0])
 
 class SmallCell(Cell):

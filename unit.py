@@ -113,9 +113,9 @@ class Player(Unit):
         items = random.choice(chest.loot_table)
         for item in items:
             if type(item) is tuple:
-                item[0](chest.cell, pygame.Vector2(chest.rect.center), pygame.Vector2(0, 0), item[1])
+                item[0](chest.cell, pygame.Vector2(chest.rect.center), pygame.Vector2(random.uniform(-1, 1), random.uniform(-1, 1)), item[1])
             else:
-                item(chest.cell, pygame.Vector2(chest.rect.center) - chest.cell.pos, pygame.Vector2(0, 0))
+                item(chest.cell, pygame.Vector2(chest.rect.center) - chest.cell.pos, pygame.Vector2(random.uniform(-1, 1), random.uniform(-1, 1)))
         chest.opened = True
         curr_item = self.items[self.curr_item_idx]
         curr_item[1] -= 1
@@ -387,17 +387,16 @@ class KeyGuard(Enemy):
         for _ in range(random.randint(2, 4)):
             vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
             ScorePoint(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel, None)
-        for _ in range(random.randint(1, 2)):
-            vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
-            Key(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel)
+        vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
+        Key(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel)
         self.kill()
 
 class Turret(Enemy):
     def __init__(self, cell, pos: pygame.Vector2, countercw: bool):
         super().__init__(cell, pos, 0, 50, 5)
-        self.offset = 8
+        self.offset = 4
         self.countercw = countercw
-        self.shoot_interval = 25
+        self.shoot_interval = 50
         self.shoot_cnt = 0
     def take_damage(self, damage):
         self.health -= 1
@@ -413,7 +412,7 @@ class Turret(Enemy):
         if curr_time > self.timer + self.shoot_interval:
             self.timer = curr_time
             for i in range(4):
-                self.shoot_bullet(pygame.Vector2(self.rect.center) + pygame.Vector2(math.cos(math.pi*self.offset/32+math.pi*i/2), math.sin(math.pi*self.offset/32+math.pi*i/2)), 10)
+                self.shoot_bullet(pygame.Vector2(self.rect.center) + pygame.Vector2(math.cos(math.pi*self.offset/16+math.pi*i/2), math.sin(math.pi*self.offset/16+math.pi*i/2)), 10)
             self.shoot_cnt += 1
             if self.shoot_cnt >= 4:
                 self.shoot_cnt = 0
@@ -432,11 +431,11 @@ class Turret(Enemy):
 
 class Elite(Enemy):
     def __init__(self, cell, pos: pygame.Vector2):
-        super().__init__(cell, pos, 8, 50, 7)
+        super().__init__(cell, pos, 8, 40, 5)
         self.state = 'idle'
         self.idle_interval = random.randint(100, 300)
         self.move_interval = random.randint(200, 600)
-        self.shoot_interval = 100
+        self.shoot_interval = 200
         self.shoot_cnt = 0
     def render(self, surface):
         self.surface.fill("crimson")
@@ -496,10 +495,7 @@ class Elite(Enemy):
         for _ in range(random.randint(2, 3)):
             vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
             ScorePoint(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel, None)
-        for _ in range(random.randint(0, 2)):
-            vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
-            HealthPotion(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel)
-        for _ in range(random.randint(1, 2)):
+        for _ in range(random.randint(0, 1)):
             vel = pygame.Vector2(random.uniform(-10, 10), random.uniform(-10, 10))
             HealthPotion(self.location, pygame.Vector2(self.rect.center) - self.location.pos, vel)
         self.kill()
