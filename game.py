@@ -29,14 +29,21 @@ def init():
 
     glob_var["grid"].randomize()
 
-def poll_event():
+def handle_event():
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             raise SystemExit
-        if glob_var["dead"] or glob_var["time_up"] or glob_var["exited"]:
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            glob_var["paused"] ^= True
+        if glob_var["paused"] or glob_var["dead"] or glob_var["time_up"] or glob_var["exited"]:
             continue
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_q:
+                glob_var["player"].switch_item('l')
+            elif event.key == pygame.K_e:
+                glob_var["player"].switch_item('r')
+        elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.Vector2(glob_var["camera"].rect.topleft) + pygame.Vector2(event.pos) - pygame.Vector2(MAZE_SIZE * TILE_WIDTH, 0)
             if event.button == pygame.BUTTON_LEFT:
                 glob_var["player"].use_item(mouse_pos)
@@ -45,11 +52,6 @@ def poll_event():
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == pygame.BUTTON_RIGHT:
                 glob_var["player"].shield = 0
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_q:
-                glob_var["player"].switch_item('l')
-            elif event.key == pygame.K_e:
-                glob_var["player"].switch_item('r')
 
 def update():
     player = glob_var["player"]
@@ -57,6 +59,8 @@ def update():
     camera = glob_var["camera"]
 
     #global status check
+    if glob_var["paused"]:
+        return
     if (glob_var["timer"] - glob_var["timer_start"]) // 1000 >= glob_var["timelimit_1"] and not glob_var["exitable"]:
         glob_var["time_up"] = True
     elif (glob_var["timer"] - glob_var["timer_start"]) // 1000 >= glob_var["timelimit_2"] and glob_var["exitable"]:
@@ -77,7 +81,7 @@ def update():
         current_cells[0].open_up()
     
     #units action
-    for enemy in current_cells[0].enemies:
+    for enemy in current_cells[-1].enemies:
         enemy.action()
     player.action()
     
@@ -98,7 +102,7 @@ def update():
     
     #don't handle collisions when in tunnel
     if isinstance(player.location, Cell):
-        cm = player.location.cm
+        cms = [cell.cm for cell in current_cells]
 
         #first move along x
         #player
@@ -119,7 +123,8 @@ def update():
             item.rect.left += item.vel.x
             item.vel.y = 0
         #first collision check
-        cm.check_collisions()
+        for cm in cms:
+            cm.check_collisions()
         #vel recover
         player.vel.y = vel_tmp.y
         for enemy in current_cells[0].enemies:
@@ -147,7 +152,8 @@ def update():
             item.rect.top += item.vel.y
             item.vel.x = 0
         #second collision check
-        cm.check_collisions()
+        for cm in cms:
+            cm.check_collisions()
         #vel recover
         player.vel.x = vel_tmp.x
         for enemy in current_cells[0].enemies:
@@ -175,6 +181,7 @@ def update():
 
     #timer update
     glob_var["timer"] = pygame.time.get_ticks()
+    glob_var["clock"].tick(60)
 
 def render():
     screen = glob_var["screen"]
@@ -197,5 +204,5 @@ def render():
     player.render(scene)
     screen.blit(scene, (MAZE_SIZE * TILE_WIDTH, 0), camera.rect)
 
-    #flip!
+    #flip
     pygame.display.flip()

@@ -37,6 +37,8 @@ class Infotab(pygame.sprite.Sprite):
         else:
             color = "white"
         texts.append(self.font.render(f'Remaining time: {remaining_seconds // 60}:{remaining_seconds % 60}', True, color))
+        if glob_var["paused"]:
+            texts.append(self.font.render('Paused', True, "white"))
         h_total = 5
         for text in texts:
             self.surface.blit(text, (0, h_total))

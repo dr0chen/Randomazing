@@ -1,12 +1,11 @@
 import pygame
-from object import *
 from utils import *
 from collision import *
 from layout import *
 from unit import *
 import random
 
-class Cell(Object):
+class Cell(pygame.sprite.Sprite):
     def __init__(self, row, col, mini_bound, bound):
         super().__init__()
         self.minisurface = pygame.Surface(mini_bound)

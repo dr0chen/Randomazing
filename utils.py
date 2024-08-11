@@ -44,6 +44,7 @@ directions = {
 }
 
 glob_var = {
+    "paused": False,
     "exitable": False,
     "exited": False,
     "dead": False,

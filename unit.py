@@ -432,7 +432,7 @@ class Turret(Enemy):
 
 class Elite(Enemy):
     def __init__(self, cell, pos: pygame.Vector2):
-        super().__init__(cell, pos, 8, 50, 10)
+        super().__init__(cell, pos, 8, 50, 7)
         self.state = 'idle'
         self.idle_interval = random.randint(100, 300)
         self.move_interval = random.randint(200, 600)

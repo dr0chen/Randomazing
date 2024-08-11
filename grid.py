@@ -1,8 +1,7 @@
 from cell import *
 from tunnel import *
-from time import sleep
 
-class Grid(Object):
+class Grid(pygame.sprite.Sprite):
     def __init__(self, w, h):
         super().__init__()
         self.minisurface = pygame.Surface([50 * w, 50 * h])

@@ -1,9 +1,8 @@
 import pygame
-from object import *
 from utils import *
 from unit import *
 
-class Tunnel(Object):
+class Tunnel(pygame.sprite.Sprite):
     all_tunnels = pygame.sprite.Group()
     outerline_h = [(5, 0), (15, 0), (15, 20), (5, 20)]
     outerline_v = [(0, 5), (20, 5), (20, 15), (0, 15)]
