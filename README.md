@@ -1,7 +1,7 @@
 ## Introduction
 
 Randomazing is a simple game created with pygame.  
-Player needs to explore the maze to collect 10 batteries and get to the exit before time runs out.
+Player needs to explore the maze to collect 10 batteries and get to the exit before time runs out.  
 However, the maze may randomly change itself with every few moves the player makes.  
 Therefore it's a challenge for the player to finish the game and gain high scores.
 
