@@ -8,3 +8,15 @@ QE to switch item
 ## Objective
 
 collect 10 batteries and get to the exit before time runs out
+
+## Usage
+
+```
+python main.py
+```
+
+## Requirements
+
+```
+pygame
+```
